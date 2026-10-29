@@ -109,7 +109,7 @@ export const mockAnalysis: Analysis = {
       team: 'Security',
       monogram: 'SE',
       status: 'silent',
-      reason: 'Reviews every API change. Two people read this page but have not commented.',
+      reason: 'Reviews every API change. Aisha follows this page but has not commented.',
       engagement: { viewed: true, commented: false },
       contacts: [{ name: 'Aisha Khan', role: 'AppSec' }],
       evidence: [

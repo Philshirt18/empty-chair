@@ -1,0 +1,22 @@
+{
+  "name": "empty-chair",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Forge app that shows which affected teams are missing from a decision.",
+  "scripts": {
+    "build:ui": "npm --prefix static/panel run build",
+    "lint": "forge lint",
+    "deploy": "npm run build:ui && forge deploy --non-interactive -e development",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@forge/api": "^8.4.0",
+    "@forge/kvs": "^2.1.1",
+    "@forge/llm": "^1.0.9",
+    "@forge/resolver": "^2.0.2"
+  },
+  "devDependencies": {
+    "@forge/cli": "14.2.0",
+    "typescript": "^5.6.3"
+  }
+}

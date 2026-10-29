@@ -19,6 +19,7 @@ export interface EvidenceGroup {
 export interface Contact {
   name: string;
   role?: string;
+  accountId?: string;
 }
 
 export interface Seat {
@@ -37,6 +38,7 @@ export interface Analysis {
   pageId: string;
   pageTitle: string;
   pageStatus: 'draft' | 'in-review' | 'decided';
+  isDecision?: boolean;
   subjects: string[];
   seats: Seat[];
   analyzedAt: string;

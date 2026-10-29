@@ -108,6 +108,28 @@ export default function App() {
     );
   }
 
+  if (data.isDecision === false || seats.length === 0) {
+    return (
+      <main className="shell">
+        <Masthead />
+        <div className="state">
+          <p className="eyebrow">{data.pageTitle}</p>
+          <h2 className="display display--sm">
+            {data.isDecision === false ? "This page doesn't read like a decision." : 'No affected work found yet.'}
+          </h2>
+          <p className="lede">
+            {data.isDecision === false
+              ? 'Empty Chair looks at proposals, RFCs, and decision records. Open one of those and check again.'
+              : `Nothing in Jira or Confluence mentions ${data.subjects.join(', ') || 'what this page changes'}. Add specific system or process names to the page, then check again.`}
+          </p>
+          <button className="primary-btn" onClick={() => load(true)}>
+            Check again
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   const allSeated = counts.missing === 0 && counts.silent === 0;
 
   return (
