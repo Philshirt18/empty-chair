@@ -1,0 +1,109 @@
+modules:
+  confluence:contentBylineItem:
+    - key: empty-chair-byline
+      resource: panel
+      title: Empty Chair
+      tooltip: See who is affected by this decision but not at the table
+      icon: resource:panel;chair.svg
+      viewportSize: xlarge
+      resolver:
+        function: resolver
+      dynamicProperties:
+        function: byline-props
+
+  rovo:agent:
+    - key: empty-chair-agent
+      name: Empty Chair
+      description: Finds teams that are affected by a decision but have not been part of it, and drafts invitations for them.
+      prompt: resource:agent-prompt;prompt.md
+      conversationStarters:
+        - Who is missing from this decision?
+        - Draft invites for the teams that are not at the table
+        - Which open decisions have empty chairs?
+      actions:
+        - find-missing-stakeholders
+        - draft-stakeholder-invite
+
+  action:
+    - key: find-missing-stakeholders
+      name: Find missing stakeholders
+      function: action-find-missing
+      actionVerb: GET
+      description: |
+        Analyse a Confluence decision or proposal page and return every team that is affected by it,
+        with evidence, and whether that team has taken part in the page (viewed or commented).
+      inputs:
+        pageId:
+          title: Page ID
+          type: string
+          required: true
+          description: The ID of the Confluence page that contains the decision or proposal.
+    - key: draft-stakeholder-invite
+      name: Draft stakeholder invite
+      function: action-draft-invite
+      actionVerb: GET
+      description: |
+        Draft a short, specific invitation for one affected team, explaining why the decision matters to them.
+        Returns text only; nothing is sent.
+      inputs:
+        pageId:
+          title: Page ID
+          type: string
+          required: true
+          description: The ID of the Confluence page that contains the decision.
+        team:
+          title: Team
+          type: string
+          required: true
+          description: The name of the affected team to invite.
+
+  rovo:mcp:
+    - key: empty-chair-mcp
+      name: Empty Chair
+      tools:
+        - find-missing-stakeholders
+        - draft-stakeholder-invite
+
+  llm:
+    - key: empty-chair-llm
+      model:
+        - claude
+
+  function:
+    - key: resolver
+      handler: index.resolver
+    - key: byline-props
+      handler: index.bylineProps
+    - key: action-find-missing
+      handler: index.findMissingAction
+    - key: action-draft-invite
+      handler: index.draftInviteAction
+
+resources:
+  - key: panel
+    path: static/panel/dist
+    tunnel:
+      port: 5173
+  - key: agent-prompt
+    path: src/agent
+
+permissions:
+  scopes:
+    - read:page:confluence
+    - read:comment:confluence
+    - read:space:confluence
+    - read:confluence-user
+    - search:confluence
+    - read:jira-work
+    - read:jira-user
+    - read:servicedesk-request
+    - write:comment:confluence
+    - storage:app
+  content:
+    styles:
+      - unsafe-inline
+
+app:
+  runtime:
+    name: nodejs22.x
+  id: ari:cloud:ecosystem::app/set-by-forge-register
