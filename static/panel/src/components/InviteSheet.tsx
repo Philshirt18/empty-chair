@@ -60,7 +60,7 @@ export function InviteSheet({ drafts, pageTitle, onBack, onPost }: Props) {
               <textarea
                 className="letter__body"
                 value={d.message}
-                rows={4}
+                rows={Math.max(3, Math.ceil(d.message.length / 80) + 1)}
                 onChange={(e) => setEdited((s) => ({ ...s, [d.seatId]: e.target.value }))}
               />
             </li>
@@ -72,7 +72,11 @@ export function InviteSheet({ drafts, pageTitle, onBack, onPost }: Props) {
         <footer className="sheet__foot">
           {!confirming ? (
             <>
-              <span className="foot-note">Posted as one page comment that mentions each contact.</span>
+              <span className="foot-note">
+                {final.some((d) => d.recipients.length > 0)
+                  ? 'Posted as one page comment that mentions each contact.'
+                  : 'Posted as one comment on this page.'}
+              </span>
               <button className="primary-btn" onClick={() => setConfirming(true)}>
                 Review and post
               </button>
