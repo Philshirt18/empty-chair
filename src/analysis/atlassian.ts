@@ -81,7 +81,8 @@ export interface JiraHit {
   projectName: string;
   projectType: string;
   team?: string;
-  people: { accountId: string; name: string }[];
+  assignee?: { accountId: string; name: string };
+  reporter?: { accountId: string; name: string };
 }
 
 let teamFieldId: string | null | undefined;
@@ -119,9 +120,7 @@ export async function searchJira(terms: string[]): Promise<JiraHit[]> {
 
   return res.issues.map((issue) => {
     const f = issue.fields;
-    const people = [f.assignee, f.reporter]
-      .filter(Boolean)
-      .map((u: any) => ({ accountId: u.accountId as string, name: u.displayName as string }));
+    const person = (u: any) => (u ? { accountId: u.accountId as string, name: u.displayName as string } : undefined);
     const teamValue = team ? f[team] : undefined;
     return {
       key: issue.key,
@@ -130,7 +129,8 @@ export async function searchJira(terms: string[]): Promise<JiraHit[]> {
       projectName: f.project.name,
       projectType: f.project.projectTypeKey,
       team: typeof teamValue === 'string' ? teamValue : teamValue?.name ?? teamValue?.title,
-      people,
+      assignee: person(f.assignee),
+      reporter: person(f.reporter),
     };
   });
 }

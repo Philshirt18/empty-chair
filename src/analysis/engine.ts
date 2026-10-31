@@ -27,6 +27,8 @@ interface Group {
   service: JiraHit[];
   pages: PageHit[];
   people: Map<string, { name: string; weight: number }>;
+  /** People assigned to the team's work. Only this makes a decision's author a member of the team. */
+  assignees: Set<string>;
 }
 
 export async function analyzePage(pageId: string, opts: { force?: boolean } = {}): Promise<Analysis> {
@@ -87,7 +89,8 @@ function groupByTeam(issues: JiraHit[], pages: PageHit[]): Map<string, Group> {
   const groups = new Map<string, Group>();
   const get = (team: string) => {
     const key = team.trim().toLowerCase();
-    if (!groups.has(key)) groups.set(key, { team: team.trim(), jira: [], service: [], pages: [], people: new Map() });
+    if (!groups.has(key))
+      groups.set(key, { team: team.trim(), jira: [], service: [], pages: [], people: new Map(), assignees: new Set() });
     return groups.get(key)!;
   };
   const addPerson = (g: Group, accountId: string, name: string, weight: number) => {
@@ -99,7 +102,11 @@ function groupByTeam(issues: JiraHit[], pages: PageHit[]): Map<string, Group> {
     const isService = issue.projectType === 'service_desk';
     const g = get(issue.team ?? issue.projectName);
     (isService ? g.service : g.jira).push(issue);
-    issue.people.forEach((p, i) => addPerson(g, p.accountId, p.name, i === 0 ? 2 : 1));
+    if (issue.assignee) {
+      addPerson(g, issue.assignee.accountId, issue.assignee.name, 2);
+      g.assignees.add(issue.assignee.accountId);
+    }
+    if (issue.reporter) addPerson(g, issue.reporter.accountId, issue.reporter.name, 1);
   }
   for (const page of pages) {
     const g = get(page.spaceName);
@@ -115,11 +122,13 @@ async function toSeat(
   authorId: string,
   participants: { commenters: Set<string>; editors: Set<string> },
 ): Promise<Seat> {
-  const members = [...g.people.keys()];
-  const author = members.includes(authorId);
+  // A decision's author often files tickets or pages for other teams. That alone must not seat those teams.
+  const author = g.assignees.has(authorId);
+  const members = [...g.people.keys()].filter((id) => id !== authorId || author);
   const commented = members.some((id) => participants.commenters.has(id) || participants.editors.has(id));
 
   const contacts: Contact[] = [...g.people.entries()]
+    .filter(([id]) => members.includes(id))
     .sort((a, b) => b[1].weight - a[1].weight)
     .slice(0, 2)
     .map(([accountId, p]) => ({ accountId, name: p.name }));
