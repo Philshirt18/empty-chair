@@ -53,7 +53,9 @@ export function InviteSheet({ drafts, pageTitle, onBack, onPost }: Props) {
             <li key={d.seatId} className="letter">
               <div className="letter__to">
                 <span className="eyebrow">To</span> {d.team}
-                <span className="letter__people">· {d.recipients.map((r) => r.name).join(', ')}</span>
+                {d.recipients.length > 0 && (
+                  <span className="letter__people">· {d.recipients.map((r) => r.name).join(', ')}</span>
+                )}
               </div>
               <textarea
                 className="letter__body"

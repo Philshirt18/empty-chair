@@ -10,6 +10,7 @@ import {
   type JiraHit,
   type PageHit,
 } from './atlassian';
+import { cleanInvite } from './clean';
 import { ask, askJson } from './llm';
 
 const CACHE_TTL_SECONDS = 60 * 60 * 6;
@@ -78,7 +79,8 @@ async function extract(title: string, text: string, labels: string[]): Promise<E
     `You read Confluence pages and find what a proposal or decision changes.
 Return {"isDecision": boolean, "status": "draft" | "in-review" | "decided", "subjects": [{"label": string, "searchTerms": string[]}]}.
 - isDecision is true for proposals, RFCs, decision records, policy or process changes.
-- subjects are the concrete things that change: systems, APIs, products, processes, dates, policies. At most 5.
+- subjects are the concrete things this decision changes: systems, APIs, products, processes, dates, policies. At most 4.
+- Do not list motivations, costs, or background such as team capacity, and do not list the replacement unless it changes something for others.
 - label is a short name a reader would recognise, for example "Payments API v1".
 - searchTerms are 1 to 3 exact phrases likely to appear in other Jira issues or pages about that subject. Prefer specific nouns over generic words.`,
     `Title: ${title}\nLabels: ${labels.join(', ') || 'none'}\n\n${text.slice(0, 12000)}`,
@@ -180,17 +182,11 @@ async function writeReasons(pageTitle: string, seats: Seat[]) {
     s.evidence.map((e) => `${e.count} ${e.label}`).join(', ') + ' relate to this decision.';
   try {
     const result = await askJson<{ reasons: Record<string, string> }>(
-      `You explain in one short sentence (max 22 words) why a team is affected by a decision.
-Use only the evidence given. Mention concrete numbers or issue keys. No speculation, no names of individuals.
+      `You explain in one short sentence (max 22 words) how a team's existing work connects to a decision.
+Say what the work is about, using the titles given. Use the exact total count. The titles are examples, not the full list.
+Do not list issue keys or key ranges. Do not start with the team name. Do not claim consequences that the titles do not state. No names of individuals.
 Return {"reasons": {"<seat id>": "<sentence>"}}.`,
-      `Decision: ${pageTitle}\n\n` +
-        seats
-          .map(
-            (s) =>
-              `Seat ${s.id} (${s.team}), status ${s.status}:\n` +
-              s.evidence.map((e) => `- ${e.count} ${e.label}: ${e.items.map((i) => i.key ?? i.title).join('; ')}`).join('\n'),
-          )
-          .join('\n\n'),
+      `Decision: ${pageTitle}\n\n` + seats.map((s) => `Seat ${s.id} (${s.team}):\n${describeEvidence(s)}`).join('\n\n'),
     );
     seats.forEach((s) => (s.reason = result.reasons[s.id] ?? fallback(s)));
   } catch {
@@ -206,17 +202,20 @@ export async function draftInvites(pageId: string, seatIds: string[]): Promise<I
   return Promise.all(
     seats.map(async (seat) => {
       const message = await ask(
-        `You write a short, friendly invitation (max 70 words) asking a team to review a decision that affects them.
-Address the contacts by first name. Say plainly why it matters to them, using the evidence. Ask for one concrete action.
-No greetings like "I hope you are well". No sign-off. Plain text only.`,
+        `You write a short invitation (max 55 words, 2 or 3 sentences, one paragraph) asking a team to give input on a proposed decision.
+It is posted as a comment on the decision page itself, so never include a link, a subject line, or a sign-off.
+Start with the first names of the contacts, or the team name if there are none.
+Say what the decision is and name the team's work that connects to it, in everyday words, using the titles given. Use the exact total count. Do not list issue keys.
+Treat the decision as proposed, not final. End by asking them to comment on this page with anything the decision should take into account.
+Never invent deadlines, consequences, or requirements. Do not say what the team must do. Plain text only, no markdown.`,
         `Decision page: ${analysis.pageTitle}
 Team: ${seat.team}
-Contacts: ${seat.contacts.map((c) => c.name).join(', ') || 'the team'}
-Why they are affected: ${seat.reason}
-Evidence: ${seat.evidence.map((e) => `${e.count} ${e.label} (${e.items.map((i) => i.key ?? i.title).join('; ')})`).join(' | ')}`,
-        400,
+Contacts: ${seat.contacts.map((c) => c.name).join(', ') || 'none'}
+Their related work:
+${describeEvidence(seat)}`,
+        300,
       );
-      return { seatId: seat.id, team: seat.team, recipients: seat.contacts, message: message.trim() };
+      return { seatId: seat.id, team: seat.team, recipients: seat.contacts, message: cleanInvite(message) };
     }),
   );
 }
@@ -234,6 +233,12 @@ export async function postInvites(pageId: string, drafts: InviteDraft[]): Promis
   }
   await postFooterComment(pageId, { type: 'doc', version: 1, content });
   return { posted: drafts.length };
+}
+
+function describeEvidence(seat: Seat): string {
+  return seat.evidence
+    .map((e) => `- ${e.count} ${e.label}, for example: ${e.items.map((i) => i.title).join('; ')}`)
+    .join('\n');
 }
 
 function paragraph(content: object[]) {
