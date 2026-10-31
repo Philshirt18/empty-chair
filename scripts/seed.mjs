@@ -35,7 +35,14 @@ async function must(method, path, body) {
 }
 
 const KANBAN = 'com.pyxis.greenhopper.jira:gh-simplified-kanban-classic';
-const SERVICE = 'com.atlassian.servicedesk:simplified-it-service-management';
+// Which service templates exist differs per site, so the first one that is accepted is used.
+const SERVICE = [
+  'com.atlassian.servicedesk:simplified-external-service-desk',
+  'com.atlassian.servicedesk:simplified-general-service-desk-it',
+  'com.atlassian.servicedesk:simplified-general-service-desk-business',
+  'com.atlassian.servicedesk:simplified-internal-service-desk',
+  'com.atlassian.servicedesk:simplified-it-service-management',
+];
 
 const projects = [
   {
@@ -130,14 +137,19 @@ async function seedProject(p, me) {
     console.log(`= ${p.name}: project exists, skipped`);
     return;
   }
-  await must('POST', '/rest/api/3/project', {
-    key: p.key,
-    name: p.name,
-    projectTypeKey: p.type,
-    projectTemplateKey: p.template,
-    leadAccountId: me,
-    assigneeType: 'UNASSIGNED',
-  });
+  let created = null;
+  for (const template of [p.template].flat()) {
+    created = await call('POST', '/rest/api/3/project', {
+      key: p.key,
+      name: p.name,
+      projectTypeKey: p.type,
+      projectTemplateKey: template,
+      leadAccountId: me,
+      assigneeType: 'UNASSIGNED',
+    });
+    if (created.ok) break;
+  }
+  if (!created.ok) throw new Error(`Could not create ${p.name}: ${JSON.stringify(created.data).slice(0, 400)}`);
   const types = await must('GET', `/rest/api/3/issue/createmeta/${p.key}/issuetypes`);
   const list = types.issueTypes ?? types.values ?? [];
   const type = list.find((t) => !t.subtask && /task|request|incident/i.test(t.name)) ?? list.find((t) => !t.subtask);
