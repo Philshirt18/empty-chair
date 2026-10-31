@@ -6,6 +6,7 @@ modules:
       tooltip: See who is affected by this decision but not at the table
       icon: resource:panel;chair.svg
       viewportSize: large
+      viewportContainer: modal
       resolver:
         function: resolver
       dynamicProperties:

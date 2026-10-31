@@ -162,7 +162,7 @@ export default function App() {
             This decision touches {seats.length} teams. {counts.present} {counts.present === 1 ? 'is' : 'are'} in the
             conversation
             {counts.silent > 0 && `, ${counts.silent} ${counts.silent === 1 ? 'is' : 'are'} reading along`}
-            {counts.missing > 0 && `, and ${counts.missing} haven't seen it yet`}.
+            {counts.missing > 0 && `, and ${counts.missing} ${counts.missing === 1 ? "hasn't" : "haven't"} joined yet`}.
           </p>
 
           <dl className="tally">
