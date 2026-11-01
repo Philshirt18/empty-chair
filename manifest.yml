@@ -103,6 +103,10 @@ permissions:
     - read:jira-user
     - write:comment:confluence
     - storage:app
+    - read:graph:user:atlassian
+    - read:graph:team:atlassian
+    - read:graph:page:confluence
+    - read:graph:issue:jira
   content:
     styles:
       - unsafe-inline

@@ -1,5 +1,6 @@
 import Resolver from '@forge/resolver';
 import { analyzePage, draftInvites, latestAnalysis, postInvites } from './analysis/engine';
+import { graphProbe } from './analysis/graphProbe';
 import type { InviteDraft } from './types';
 
 const r = new Resolver();
@@ -15,6 +16,11 @@ r.define('draftInvites', async ({ payload, context }) => {
 
 r.define('postInvites', async ({ payload, context }) => {
   return postInvites(context.extension.content.id, payload.drafts as InviteDraft[]);
+});
+
+// Temporary: Teamwork Graph availability check, see analysis/graphProbe.ts.
+r.define('graphProbe', async ({ context }) => {
+  return graphProbe(context.extension.content.id, context.cloudId, context.accountId);
 });
 
 export const resolver = r.getDefinitions();

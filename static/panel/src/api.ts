@@ -30,6 +30,8 @@ export async function analyze(force = false): Promise<Analysis> {
     if (mockMode === 'error') throw new Error('The analysis service did not respond.');
     return mockMode === 'seated' ? mockAllSeated : mockAnalysis;
   }
+  // Temporary: Teamwork Graph availability check. Logs only, failures do not affect the panel.
+  invoke('graphProbe', {}).catch(() => undefined);
   return invoke<Analysis>('analyze', { force });
 }
 
