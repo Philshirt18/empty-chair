@@ -144,7 +144,7 @@ const spaces = [
   },
 ];
 
-// Demo people are invited by hand (see README). Missing people are reported, not fatal.
+// Demo people (Mira Okafor, Priya Raman, Tom Lindqvist) are invited to the site by hand. Missing people are reported, not fatal.
 const people = new Map();
 async function findUser(name) {
   if (!people.has(name)) {
