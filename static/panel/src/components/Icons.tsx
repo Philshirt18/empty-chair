@@ -55,6 +55,17 @@ export function ChairMark({ size = 18 }: { size?: number }) {
   );
 }
 
+export function GraphMark() {
+  return (
+    <svg {...common}>
+      <circle cx="4" cy="4.5" r="1.8" />
+      <circle cx="12" cy="4.5" r="1.8" />
+      <circle cx="8" cy="12" r="1.8" />
+      <path d="M5.6 5.4l1.6 4.8M10.4 5.4l-1.6 4.8M5.8 4.5h4.4" />
+    </svg>
+  );
+}
+
 export function Refresh() {
   return (
     <svg {...common}>

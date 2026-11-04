@@ -7,6 +7,7 @@ export const mockAnalysis: Analysis = {
   pageStatus: 'in-review',
   subjects: ['Payments API v1', 'March 31 shutdown', 'Webhook migration', 'Invoice export'],
   analyzedAt: new Date(Date.now() - 1000 * 60 * 4).toISOString(),
+  signals: { reading: 'graph', teams: 'graph' },
   seats: [
     {
       id: 'platform',
@@ -109,8 +110,8 @@ export const mockAnalysis: Analysis = {
       team: 'Security',
       monogram: 'SE',
       status: 'silent',
-      reason: 'Reviews every API change. Aisha follows this page but has not commented.',
-      engagement: { viewed: true, commented: false },
+      reason: 'Reviews every API change. Aisha read this page last week but has not commented.',
+      engagement: { viewed: true, commented: false, read: true },
       contacts: [{ name: 'Aisha Khan', role: 'AppSec' }],
       evidence: [
         {

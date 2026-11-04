@@ -1,13 +1,12 @@
 import Resolver from '@forge/resolver';
 import { analyzePage, draftInvites, latestAnalysis, postInvites } from './analysis/engine';
-import { graphProbe } from './analysis/graphProbe';
 import type { InviteDraft } from './types';
 
 const r = new Resolver();
 
 r.define('analyze', async ({ payload, context }) => {
   const pageId = context.extension.content.id as string;
-  return analyzePage(pageId, { force: Boolean(payload?.force) });
+  return analyzePage(pageId, { force: Boolean(payload?.force), cloudId: context.cloudId });
 });
 
 r.define('draftInvites', async ({ payload, context }) => {
@@ -16,11 +15,6 @@ r.define('draftInvites', async ({ payload, context }) => {
 
 r.define('postInvites', async ({ payload, context }) => {
   return postInvites(context.extension.content.id, payload.drafts as InviteDraft[]);
-});
-
-// Temporary: Teamwork Graph availability check, see analysis/graphProbe.ts.
-r.define('graphProbe', async ({ context }) => {
-  return graphProbe(context.extension.content.id, context.cloudId, context.accountId);
 });
 
 export const resolver = r.getDefinitions();
@@ -44,15 +38,22 @@ export async function bylineProps(payload: any, context: any) {
 }
 
 /** Rovo action and MCP tool: find-missing-stakeholders. */
-export async function findMissingAction(payload: { pageId: string }) {
-  const a = await analyzePage(String(payload.pageId));
+export async function findMissingAction(payload: { pageId: string; context?: { cloudId?: string } }, context?: { cloudId?: string }) {
+  const a = await analyzePage(String(payload.pageId), { cloudId: payload.context?.cloudId ?? context?.cloudId });
   return {
     page: a.pageTitle,
     isDecision: a.isDecision,
     subjects: a.subjects,
     teams: a.seats.map((s) => ({
       team: s.team,
-      status: s.status === 'missing' ? 'not at the table' : s.status === 'silent' ? 'following, not commenting' : 'at the table',
+      status:
+        s.status === 'missing'
+          ? 'not at the table'
+          : s.status === 'silent'
+            ? s.engagement.read
+              ? 'read the page, has not commented'
+              : 'following the page, has not commented'
+            : 'at the table',
       why: s.reason,
       evidence: s.evidence.map((e) => `${e.count} ${e.label}`),
       contacts: s.contacts.map((c) => c.name),
@@ -61,9 +62,13 @@ export async function findMissingAction(payload: { pageId: string }) {
 }
 
 /** Rovo action and MCP tool: draft-stakeholder-invite. Returns text only. */
-export async function draftInviteAction(payload: { pageId: string; team: string }) {
+export async function draftInviteAction(
+  payload: { pageId: string; team: string; context?: { cloudId?: string } },
+  context?: { cloudId?: string },
+) {
   const pageId = String(payload.pageId);
-  const a = (await latestAnalysis(pageId)) ?? (await analyzePage(pageId));
+  const a =
+    (await latestAnalysis(pageId)) ?? (await analyzePage(pageId, { cloudId: payload.context?.cloudId ?? context?.cloudId }));
   const seat = a.seats.find((s) => s.team.toLowerCase() === String(payload.team).toLowerCase());
   if (!seat) return { error: `No affected team called "${payload.team}" was found for this page.` };
   const [draft] = await draftInvites(pageId, [seat.id]);

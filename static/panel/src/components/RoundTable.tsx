@@ -70,6 +70,6 @@ export function RoundTable({ seats, activeId, onHover, onSelect }: Props) {
 
 export function labelFor(seat: Seat): string {
   if (seat.status === 'present') return seat.engagement.author ? 'Author' : 'At the table';
-  if (seat.status === 'silent') return 'Following, not speaking';
+  if (seat.status === 'silent') return seat.engagement.read ? 'Read it, not speaking' : 'Following, not speaking';
   return 'Not at the table';
 }

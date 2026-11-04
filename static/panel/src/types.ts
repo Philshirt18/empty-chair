@@ -31,7 +31,7 @@ export interface Seat {
   reason: string;
   evidence: EvidenceGroup[];
   contacts: Contact[];
-  engagement: { viewed: boolean; commented: boolean; author?: boolean };
+  engagement: { viewed: boolean; commented: boolean; author?: boolean; read?: boolean; following?: boolean };
 }
 
 export interface Analysis {
@@ -42,6 +42,7 @@ export interface Analysis {
   subjects: string[];
   seats: Seat[];
   analyzedAt: string;
+  signals?: { reading: 'graph' | 'unavailable'; teams: 'graph' | 'projects' };
 }
 
 export interface InviteDraft {

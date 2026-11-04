@@ -11,6 +11,7 @@ import {
   type PageHit,
 } from './atlassian';
 import { cleanInvite } from './clean';
+import { pageViewers, userTeams, type GraphResult } from './graph';
 import { ask, askJson } from './llm';
 
 const CACHE_TTL_SECONDS = 60 * 60 * 6;
@@ -30,9 +31,14 @@ interface Group {
   people: Map<string, { name: string; weight: number }>;
   /** People assigned to the team's work. Only this makes a decision's author a member of the team. */
   assignees: Set<string>;
+  /** True when the name comes from an Atlassian team rather than a project or space. */
+  isTeam: boolean;
 }
 
-export async function analyzePage(pageId: string, opts: { force?: boolean } = {}): Promise<Analysis> {
+export async function analyzePage(
+  pageId: string,
+  opts: { force?: boolean; cloudId?: string } = {},
+): Promise<Analysis> {
   const page = await getPage(pageId);
   const cacheKey = `analysis:${pageId}:${page.version}`;
   if (!opts.force) {
@@ -43,15 +49,18 @@ export async function analyzePage(pageId: string, opts: { force?: boolean } = {}
   const extraction = await extract(page.title, page.text, page.labels);
   const terms = [...new Set(extraction.subjects.flatMap((s) => s.searchTerms))].slice(0, 8);
 
-  const [issues, pages, participants] = await Promise.all([
+  const noGraph: GraphResult<Set<string>> = { ok: false, reason: 'no cloud id' };
+  const [issues, pages, participants, viewers] = await Promise.all([
     searchJira(terms),
     searchPages(terms, pageId),
     getParticipants(pageId, page.authorId),
+    opts.cloudId ? pageViewers(opts.cloudId, pageId) : Promise.resolve(noGraph),
   ]);
+  if (!viewers.ok) console.log(`[graph] page viewers unavailable: ${viewers.reason}`);
 
-  const groups = groupByTeam(issues, pages);
+  const groups = await nameByAtlassianTeams(groupByTeam(issues, pages), page.authorId);
   const seats = await Promise.all(
-    [...groups.values()].map((g) => toSeat(g, pageId, page.authorId, participants)),
+    [...groups.values()].map((g) => toSeat(g, pageId, page.authorId, participants, viewers)),
   );
   await writeReasons(page.title, seats);
 
@@ -63,6 +72,10 @@ export async function analyzePage(pageId: string, opts: { force?: boolean } = {}
     subjects: extraction.subjects.map((s) => s.label),
     seats,
     analyzedAt: new Date().toISOString(),
+    signals: {
+      reading: viewers.ok ? 'graph' : 'unavailable',
+      teams: [...groups.values()].some((g) => g.isTeam) ? 'graph' : 'projects',
+    },
   };
 
   await kvs.set(cacheKey, analysis, { ttl: { value: CACHE_TTL_SECONDS, unit: 'SECONDS' } });
@@ -89,10 +102,18 @@ Return {"isDecision": boolean, "status": "draft" | "in-review" | "decided", "sub
 
 function groupByTeam(issues: JiraHit[], pages: PageHit[]): Map<string, Group> {
   const groups = new Map<string, Group>();
-  const get = (team: string) => {
+  const get = (team: string, isTeam = false) => {
     const key = team.trim().toLowerCase();
     if (!groups.has(key))
-      groups.set(key, { team: team.trim(), jira: [], service: [], pages: [], people: new Map(), assignees: new Set() });
+      groups.set(key, {
+        team: team.trim(),
+        jira: [],
+        service: [],
+        pages: [],
+        people: new Map(),
+        assignees: new Set(),
+        isTeam,
+      });
     return groups.get(key)!;
   };
   const addPerson = (g: Group, accountId: string, name: string, weight: number) => {
@@ -102,7 +123,7 @@ function groupByTeam(issues: JiraHit[], pages: PageHit[]): Map<string, Group> {
 
   for (const issue of issues) {
     const isService = issue.projectType === 'service_desk';
-    const g = get(issue.team ?? issue.projectName);
+    const g = get(issue.team ?? issue.projectName, Boolean(issue.team));
     (isService ? g.service : g.jira).push(issue);
     if (issue.assignee) {
       addPerson(g, issue.assignee.accountId, issue.assignee.name, 2);
@@ -118,11 +139,54 @@ function groupByTeam(issues: JiraHit[], pages: PageHit[]): Map<string, Group> {
   return groups;
 }
 
+/**
+ * Projects and spaces are a stand-in for teams. When the people doing that work share an Atlassian team in the
+ * Teamwork Graph, the group takes the team's name, and groups that turn out to be the same team are merged.
+ */
+async function nameByAtlassianTeams(groups: Map<string, Group>, authorId: string): Promise<Map<string, Group>> {
+  const renamed = await Promise.all(
+    [...groups.values()].map(async (g) => {
+      if (g.isTeam) return g;
+      const people = [...g.people.entries()]
+        .filter(([id]) => id !== authorId || g.assignees.has(id))
+        .sort((a, b) => b[1].weight - a[1].weight)
+        .slice(0, 3)
+        .map(([id]) => id);
+      if (people.length === 0) return g;
+      const results = await Promise.all(people.map(userTeams));
+      const counts = new Map<string, number>();
+      results.forEach((r) => r.ok && new Set(r.value).forEach((t) => counts.set(t, (counts.get(t) ?? 0) + 1)));
+      const [best] = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+      return best && best[1] * 2 >= people.length ? { ...g, team: best[0], isTeam: true } : g;
+    }),
+  );
+
+  const merged = new Map<string, Group>();
+  for (const g of renamed) {
+    const key = g.team.toLowerCase();
+    const cur = merged.get(key);
+    if (!cur) {
+      merged.set(key, g);
+      continue;
+    }
+    cur.jira.push(...g.jira);
+    cur.service.push(...g.service);
+    cur.pages.push(...g.pages);
+    g.assignees.forEach((id) => cur.assignees.add(id));
+    g.people.forEach((p, id) => {
+      const prev = cur.people.get(id);
+      cur.people.set(id, { name: p.name, weight: (prev?.weight ?? 0) + p.weight });
+    });
+  }
+  return merged;
+}
+
 async function toSeat(
   g: Group,
   pageId: string,
   authorId: string,
   participants: { commenters: Set<string>; editors: Set<string> },
+  viewers: GraphResult<Set<string>>,
 ): Promise<Seat> {
   // A decision's author often files tickets or pages for other teams. That alone must not seat those teams.
   const author = g.assignees.has(authorId);
@@ -135,8 +199,11 @@ async function toSeat(
     .slice(0, 2)
     .map(([accountId, p]) => ({ accountId, name: p.name }));
 
+  // Teamwork Graph: someone from the team opened the page in the last 30 days.
+  const read = viewers.ok && members.some((id) => viewers.value.has(id));
+
   let following = false;
-  if (!commented) {
+  if (!commented && !read) {
     const checks = await Promise.all(contacts.map((c) => isWatching(pageId, c.accountId!)));
     following = checks.some(Boolean);
   }
@@ -168,11 +235,11 @@ async function toSeat(
     id: slug(g.team),
     team: g.team,
     monogram: monogram(g.team),
-    status: commented ? 'present' : following ? 'silent' : 'missing',
+    status: commented ? 'present' : read || following ? 'silent' : 'missing',
     reason: '',
     evidence,
     contacts,
-    engagement: { viewed: commented || following, commented, author },
+    engagement: { viewed: commented || read, read, following, commented, author },
   };
 }
 

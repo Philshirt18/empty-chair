@@ -4,7 +4,7 @@ import { analyze, draftInvites, postInvites } from './api';
 import { RoundTable } from './components/RoundTable';
 import { SeatRow } from './components/SeatRow';
 import { InviteSheet } from './components/InviteSheet';
-import { ChairMark, Refresh } from './components/Icons';
+import { ChairMark, GraphMark, Refresh } from './components/Icons';
 
 type View = 'table' | 'invites';
 
@@ -161,7 +161,7 @@ export default function App() {
           <p className="lede">
             This decision touches {seats.length} teams. {counts.present} {counts.present === 1 ? 'is' : 'are'} in the
             conversation
-            {counts.silent > 0 && `, ${counts.silent} ${counts.silent === 1 ? 'is' : 'are'} reading along`}
+            {counts.silent > 0 && `, ${counts.silent} ${counts.silent === 1 ? 'is' : 'are'} listening without a word`}
             {counts.missing > 0 && `, and ${counts.missing} ${counts.missing === 1 ? "hasn't" : "haven't"} joined yet`}.
           </p>
 
@@ -179,6 +179,12 @@ export default function App() {
               <dd>{counts.missing}</dd>
             </div>
           </dl>
+
+          {data.signals?.reading === 'graph' && (
+            <p className="source">
+              <GraphMark /> Who read the page comes from the Teamwork Graph, last 30 days.
+            </p>
+          )}
 
           <div className="subjects">
             <span className="subjects__label">What this decision touches</span>
