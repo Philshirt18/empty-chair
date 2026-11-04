@@ -296,9 +296,10 @@ ${describeEvidence(seat)}`,
 const INVITE_PROMPT = `You write a short invitation (max 55 words, 2 or 3 sentences, one paragraph) asking a team that has not seen a proposed decision to give input.
 Say what the decision is. End by asking them to comment on this page with anything the decision should take into account.`;
 
-const NUDGE_PROMPT = `You write a short, warm nudge (max 45 words, 2 sentences, one paragraph) to a team that has already read a proposed decision but has not commented.
-Acknowledge that they have seen it, without sounding like surveillance: say "you've seen the proposal", never mention tracking, views, or data.
-End with one open question asking whether there is anything the decision should account for before it is final.`;
+const NUDGE_PROMPT = `You write a short, warm nudge (max 40 words, exactly 2 sentences, one paragraph) to a team that has already read a proposed decision but has not commented.
+Sentence 1: acknowledge that they have seen it ("you've seen the proposal") and name at most two pieces of their work that connect to it.
+Sentence 2: one open question asking whether there is anything the decision should account for before it is final.
+Never sound like surveillance: do not use "noticed", "we see", "tracking", "views", or "data".`;
 
 export async function postInvites(pageId: string, drafts: InviteDraft[]): Promise<{ posted: number }> {
   const content: object[] = [
