@@ -26,8 +26,15 @@ r.define('graphProbe', async ({ context }) => {
 export const resolver = r.getDefinitions();
 
 /** Byline title: shows the number of empty chairs from the last analysis without re-running it. */
-export async function bylineProps(_payload: unknown, context: { extension: { content: { id: string } } }) {
-  const last = await latestAnalysis(context.extension.content.id);
+export async function bylineProps(payload: any, context: any) {
+  // The page id arrives in different places depending on the Forge runtime version.
+  const pageId: string | undefined =
+    context?.extension?.content?.id ?? payload?.extension?.content?.id ?? payload?.context?.extension?.content?.id;
+  if (!pageId) {
+    console.log(`[byline] no page id; payload keys=${Object.keys(payload ?? {})} context keys=${Object.keys(context ?? {})}`);
+    return { title: 'Empty Chair', tooltip: 'Check who is affected by this page' };
+  }
+  const last = await latestAnalysis(pageId);
   if (!last) return { title: 'Empty Chair', tooltip: 'Check who is affected by this page' };
   const empty = last.seats.filter((s) => s.status === 'missing').length;
   return {
