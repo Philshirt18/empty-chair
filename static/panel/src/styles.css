@@ -686,6 +686,8 @@ textarea {
 }
 
 .evidence__key {
+  flex: none;
+  white-space: nowrap;
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 12px;
   color: var(--ink);
@@ -969,5 +971,11 @@ textarea {
   gap: 7px;
   margin: -8px 0 18px;
   font-size: 12px;
+  color: var(--ink-3);
+}
+
+.contacts__empty {
+  margin: 0;
+  font-size: 13px;
   color: var(--ink-3);
 }

@@ -80,6 +80,9 @@ export function SeatRow({ seat, active, expanded, selected, onHover, onToggle, o
           </div>
           <div className="detail-col detail-col--narrow">
             <h4>Who to ask</h4>
+            {seat.contacts.length === 0 && (
+              <p className="contacts__empty">Nobody is assigned to this work yet. The invitation goes to the team.</p>
+            )}
             <ul className="contacts">
               {seat.contacts.map((c) => (
                 <li key={c.name}>
