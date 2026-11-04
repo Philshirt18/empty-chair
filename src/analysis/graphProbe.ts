@@ -1,50 +1,41 @@
 import api from '@forge/api';
+import queryKeys from '../graph-queries.json';
 
 // Temporary: checks what the Teamwork Graph returns on this site. Results go to the app logs only.
+// Queries are registered with scripts/register-graph-queries.mjs.
 
-const QUERY = `query emptyChair_probe($cypherQuery: String!, $params: CypherRequestParams) {
-  cypherQuery(query: $cypherQuery, params: $params) {
+const QUERY = `query emptychair_probeQuery($queryKey: String!, $queryParams: CypherRequestParams) {
+  customQuery(queryKey: $queryKey, queryParams: $queryParams, first: 25) {
     edges { node { columns { key value { __typename
       ... on CypherQueryResultListNode { nodes { id data { __typename } } }
+      ... on CypherQueryResultNode { id data { __typename } }
     } } } }
   }
 }`;
 
-async function run(label: string, cypherQuery: string, params: Record<string, string>) {
+const keys = queryKeys as Record<string, string | undefined>;
+
+async function run(label: string, key: string | undefined, queryParams: Record<string, string>) {
+  if (!key) {
+    console.log(`[graph-probe] ${label} skipped: query not registered`);
+    return;
+  }
   try {
-    const res = await api.asUser().requestTeamworkGraph(QUERY, { cypherQuery, params });
-    const text = await res.text();
-    console.log(`[graph-probe] ${label} status=${res.status} body=${text.slice(0, 1500)}`);
+    const res = await api.asUser().requestTeamworkGraph(QUERY, { queryKey: key, queryParams });
+    console.log(`[graph-probe] ${label} status=${res.status} body=${(await res.text()).slice(0, 1500)}`);
   } catch (e) {
     console.log(`[graph-probe] ${label} threw ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 
 export async function graphProbe(pageId: string, cloudId: string, accountId: string) {
-  const userAri = `ari:cloud:identity::user/${accountId}`;
-  const pageAri = `ari:cloud:confluence:${cloudId}:page/${pageId}`;
-
   try {
-    const echo = await api.asUser().requestTeamworkGraph(`query { echo(myString: "Hello World!") }`);
+    const echo = await api.asUser().requestTeamworkGraph(`query emptychair_echo { echo(myString: "Hello World!") }`);
     console.log(`[graph-probe] echo status=${echo.status} body=${(await echo.text()).slice(0, 500)}`);
   } catch (e) {
     console.log(`[graph-probe] echo threw ${e instanceof Error ? e.message : String(e)}`);
   }
-
-  await run(
-    'user-teams',
-    'MATCH (user:AtlassianUser {ari: $id})-[:atlassian_user_is_in_atlassian_team]->(team:AtlassianTeam) RETURN collect(distinct team) as teams',
-    { id: userAri },
-  );
-  await run(
-    'user-viewed-pages',
-    'MATCH (user:AtlassianUser {ari: $id})-[:atlassian_user_viewed_documents]->(page:ConfluencePage) RETURN collect(distinct page) as pages',
-    { id: userAri },
-  );
-  await run(
-    'page-viewers',
-    'MATCH (user:AtlassianUser)-[:atlassian_user_viewed_documents]->(page:ConfluencePage {ari: $id}) RETURN collect(distinct user) as users',
-    { id: pageAri },
-  );
+  await run('user-teams', keys.userTeams, { userAri: `ari:cloud:identity::user/${accountId}` });
+  await run('page-viewers', keys.pageViewers, { pageAri: `ari:cloud:confluence:${cloudId}:page/${pageId}` });
   return { done: true };
 }
