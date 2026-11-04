@@ -37,9 +37,24 @@ export async function bylineProps(payload: any, context: any) {
   };
 }
 
+type ActionContext = { cloudId?: string; installContext?: string };
+
+/**
+ * Rovo and external MCP clients call actions with different context shapes. The Teamwork Graph needs the
+ * site's cloud id, so it is taken from whichever field carries it, including the install context ARI.
+ */
+function cloudIdOf(payload: { context?: ActionContext }, context?: ActionContext): string | undefined {
+  const direct = payload.context?.cloudId ?? context?.cloudId;
+  if (direct) return direct;
+  const ari = context?.installContext ?? payload.context?.installContext;
+  return ari?.match(/site\/([0-9a-f-]{36})/)?.[1];
+}
+
 /** Rovo action and MCP tool: find-missing-stakeholders. */
-export async function findMissingAction(payload: { pageId: string; context?: { cloudId?: string } }, context?: { cloudId?: string }) {
-  const a = await analyzePage(String(payload.pageId), { cloudId: payload.context?.cloudId ?? context?.cloudId });
+export async function findMissingAction(payload: { pageId: string; context?: ActionContext }, context?: ActionContext) {
+  const cloudId = cloudIdOf(payload, context);
+  console.log(`[action] find-missing page=${payload.pageId} cloudId=${cloudId ? 'found' : 'missing'} contextKeys=${Object.keys(context ?? {})}`);
+  const a = await analyzePage(String(payload.pageId), { cloudId });
   return {
     page: a.pageTitle,
     isDecision: a.isDecision,
@@ -63,12 +78,11 @@ export async function findMissingAction(payload: { pageId: string; context?: { c
 
 /** Rovo action and MCP tool: draft-stakeholder-invite. Returns text only. */
 export async function draftInviteAction(
-  payload: { pageId: string; team: string; context?: { cloudId?: string } },
-  context?: { cloudId?: string },
+  payload: { pageId: string; team: string; context?: ActionContext },
+  context?: ActionContext,
 ) {
   const pageId = String(payload.pageId);
-  const a =
-    (await latestAnalysis(pageId)) ?? (await analyzePage(pageId, { cloudId: payload.context?.cloudId ?? context?.cloudId }));
+  const a = (await latestAnalysis(pageId)) ?? (await analyzePage(pageId, { cloudId: cloudIdOf(payload, context) }));
   const seat = a.seats.find((s) => s.team.toLowerCase() === String(payload.team).toLowerCase());
   if (!seat) return { error: `No affected team called "${payload.team}" was found for this page.` };
   const [draft] = await draftInvites(pageId, [seat.id]);
