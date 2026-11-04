@@ -48,6 +48,7 @@ export interface Analysis {
 export interface InviteDraft {
   seatId: string;
   team: string;
+  kind?: 'invite' | 'nudge';
   recipients: Contact[];
   message: string;
 }

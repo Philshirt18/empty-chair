@@ -93,7 +93,8 @@ async function extract(title: string, text: string, labels: string[]): Promise<E
 Return {"isDecision": boolean, "status": "draft" | "in-review" | "decided", "subjects": [{"label": string, "searchTerms": string[]}]}.
 - isDecision is true for proposals, RFCs, decision records, policy or process changes.
 - subjects are the concrete things this decision changes: systems, APIs, products, processes, dates, policies. At most 4.
-- Do not list motivations, costs, or background such as team capacity, and do not list the replacement unless it changes something for others.
+- Do not list motivations, costs, or background such as team capacity.
+- Do not list the replacement or successor (for example the new version that clients move to) as its own subject. It is part of the change, not a separate thing that changes.
 - label is a short name a reader would recognise, for example "Payments API v1".
 - searchTerms are 1 to 3 exact phrases likely to appear in other Jira issues or pages about that subject. Prefer specific nouns over generic words.`,
     `Title: ${title}\nLabels: ${labels.join(', ') || 'none'}\n\n${text.slice(0, 12000)}`,
@@ -268,13 +269,14 @@ export async function draftInvites(pageId: string, seatIds: string[]): Promise<I
 
   return Promise.all(
     seats.map(async (seat) => {
+      // Teams that read the page but stayed quiet get a nudge, not an introduction to something they already know.
+      const kind: InviteDraft['kind'] = seat.status === 'silent' ? 'nudge' : 'invite';
       const message = await ask(
-        `You write a short invitation (max 55 words, 2 or 3 sentences, one paragraph) asking a team to give input on a proposed decision.
+        `${kind === 'nudge' ? NUDGE_PROMPT : INVITE_PROMPT}
 It is posted as a comment on the decision page itself, so never include a link, a subject line, or a sign-off.
 Start with the first names of the contacts, or the team name if there are none.
-Say what the decision is and name the team's work that connects to it, in everyday words, using the titles given. Use the exact total count. Do not list issue keys.
-Treat the decision as proposed, not final. End by asking them to comment on this page with anything the decision should take into account.
-Never invent deadlines, consequences, or requirements. Do not say what the team must do. Plain text only, no markdown.`,
+Name the team's work that connects to the decision, in everyday words, using the titles given. Use the exact total count. Do not list issue keys.
+Treat the decision as proposed, not final. Never invent deadlines, consequences, or requirements. Do not say what the team must do. Plain text only, no markdown.`,
         `Decision page: ${analysis.pageTitle}
 Team: ${seat.team}
 Contacts: ${seat.contacts.map((c) => c.name).join(', ') || 'none'}
@@ -282,14 +284,21 @@ Their related work:
 ${describeEvidence(seat)}`,
         300,
       );
-      return { seatId: seat.id, team: seat.team, recipients: seat.contacts, message: cleanInvite(message) };
+      return { seatId: seat.id, team: seat.team, kind, recipients: seat.contacts, message: cleanInvite(message) };
     }),
   );
 }
 
+const INVITE_PROMPT = `You write a short invitation (max 55 words, 2 or 3 sentences, one paragraph) asking a team that has not seen a proposed decision to give input.
+Say what the decision is. End by asking them to comment on this page with anything the decision should take into account.`;
+
+const NUDGE_PROMPT = `You write a short, warm nudge (max 45 words, 2 sentences, one paragraph) to a team that has already read a proposed decision but has not commented.
+Acknowledge that they have seen it, without sounding like surveillance: say "you've seen the proposal", never mention tracking, views, or data.
+End with one open question asking whether there is anything the decision should account for before it is final.`;
+
 export async function postInvites(pageId: string, drafts: InviteDraft[]): Promise<{ posted: number }> {
   const content: object[] = [
-    paragraph([{ type: 'text', text: 'Empty Chair: these teams are affected by this decision and have not been part of it yet.', marks: [{ type: 'strong' }] }]),
+    paragraph([{ type: 'text', text: 'Empty Chair: input requested from teams this decision affects.', marks: [{ type: 'strong' }] }]),
   ];
   for (const d of drafts) {
     const mentions = d.recipients

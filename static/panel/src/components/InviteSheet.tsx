@@ -52,7 +52,8 @@ export function InviteSheet({ drafts, pageTitle, onBack, onPost }: Props) {
           {final.map((d) => (
             <li key={d.seatId} className="letter">
               <div className="letter__to">
-                <span className="eyebrow">To</span> {d.team}
+                <span className={`kind kind--${d.kind ?? 'invite'}`}>{d.kind === 'nudge' ? 'Nudge' : 'Invite'}</span>
+                {d.team}
                 {d.recipients.length > 0 && (
                   <span className="letter__people">· {d.recipients.map((r) => r.name).join(', ')}</span>
                 )}

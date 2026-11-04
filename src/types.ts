@@ -49,6 +49,8 @@ export interface Analysis {
 export interface InviteDraft {
   seatId: string;
   team: string;
+  /** "invite" for teams that have not joined, "nudge" for teams that read the page but stayed quiet. */
+  kind?: 'invite' | 'nudge';
   recipients: Contact[];
   message: string;
 }

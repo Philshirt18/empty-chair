@@ -28,7 +28,7 @@ export default function App() {
     try {
       const result = await analyze(force);
       setData(result);
-      setSelected(new Set(result.seats.filter((s) => s.status === 'missing').map((s) => s.id)));
+      setSelected(new Set(result.seats.filter((s) => s.status !== 'present').map((s) => s.id)));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.');
     } finally {

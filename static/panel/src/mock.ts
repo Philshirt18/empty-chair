@@ -165,5 +165,11 @@ export function mockInvites(seatIds: string[]): InviteDraft[] {
   return seatIds
     .map((id) => mockAnalysis.seats.find((s) => s.id === id))
     .filter((s): s is NonNullable<typeof s> => Boolean(s))
-    .map((s) => ({ seatId: s.id, team: s.team, recipients: s.contacts, message: texts[s.id] ?? '' }));
+    .map((s) => ({
+      seatId: s.id,
+      team: s.team,
+      kind: s.status === 'silent' ? 'nudge' : 'invite',
+      recipients: s.contacts,
+      message: texts[s.id] ?? '',
+    }));
 }
