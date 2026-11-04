@@ -19,7 +19,7 @@ const CACHE_TTL_SECONDS = 60 * 60 * 6;
 interface Extraction {
   isDecision: boolean;
   status: 'draft' | 'in-review' | 'decided';
-  subjects: { label: string; searchTerms: string[] }[];
+  subjects: { label: string; role?: 'changed' | 'replacement' | 'context'; searchTerms: string[] }[];
 }
 
 /** Collected evidence for one team before it becomes a seat. */
@@ -47,6 +47,9 @@ export async function analyzePage(
   }
 
   const extraction = await extract(page.title, page.text, page.labels);
+  // Only what the decision changes affects other teams. Replacements and background widen the search with noise.
+  const changed = extraction.subjects.filter((s) => (s.role ?? 'changed') === 'changed');
+  extraction.subjects = changed.length ? changed : extraction.subjects;
   const terms = [...new Set(extraction.subjects.flatMap((s) => s.searchTerms))].slice(0, 8);
 
   const noGraph: GraphResult<Set<string>> = { ok: false, reason: 'no cloud id' };
@@ -90,7 +93,8 @@ export async function latestAnalysis(pageId: string): Promise<Analysis | undefin
 async function extract(title: string, text: string, labels: string[]): Promise<Extraction> {
   return askJson<Extraction>(
     `You read Confluence pages and find what a proposal or decision changes.
-Return {"isDecision": boolean, "status": "draft" | "in-review" | "decided", "subjects": [{"label": string, "searchTerms": string[]}]}.
+Return {"isDecision": boolean, "status": "draft" | "in-review" | "decided", "subjects": [{"label": string, "role": "changed" | "replacement" | "context", "searchTerms": string[]}]}.
+- role is "changed" for the things the decision removes, alters, or schedules; "replacement" for what people move to instead; "context" for background.
 - isDecision is true for proposals, RFCs, decision records, policy or process changes.
 - subjects are the concrete things this decision changes: systems, APIs, products, processes, dates, policies. At most 4.
 - Do not list motivations, costs, or background such as team capacity.
