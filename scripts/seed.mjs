@@ -63,6 +63,7 @@ const projects = [
     name: 'Team Atlas',
     template: KANBAN,
     type: 'software',
+    owner: 'Mira Okafor',
     issues: [
       'Checkout: retry failed Payments API v1 charges',
       'Refund flow still calls Payments API v1',
@@ -81,6 +82,7 @@ const projects = [
     name: 'Customer Support',
     template: SERVICE,
     type: 'service_desk',
+    owner: 'Priya Raman',
     issues: [
       'Northwind: Payments API v1 webhook signature errors',
       'Contoso asks for Payments API v1 support timeline',
@@ -90,6 +92,17 @@ const projects = [
       'Litware needs Payments API v1 sandbox access',
       'Proseware: invoices missing after Payments API v1 call',
       'Wingtip asks how long Payments API v1 stays available',
+    ],
+  },
+  {
+    key: 'FINOPS',
+    name: 'Finance Ops',
+    template: KANBAN,
+    type: 'software',
+    owner: 'Tom Lindqvist',
+    issues: [
+      'Monthly invoice export reads the Payments API v1 export endpoint',
+      'Reconcile settlements against the Payments API v1 report',
     ],
   },
   {
@@ -131,10 +144,43 @@ const spaces = [
   },
 ];
 
+// Demo people are invited by hand (see README). Missing people are reported, not fatal.
+const people = new Map();
+async function findUser(name) {
+  if (!people.has(name)) {
+    const found = await must('GET', `/rest/api/3/user/search?query=${encodeURIComponent(name)}`);
+    people.set(name, found.find((u) => u.accountType === 'atlassian' && u.displayName === name)?.accountId ?? null);
+  }
+  return people.get(name);
+}
+
+/** Gives every unassigned issue in the project to its owner, so the team has a face. */
+async function assignOwner(p) {
+  if (!p.owner) return;
+  const ownerId = await findUser(p.owner);
+  if (!ownerId) {
+    console.log(`! ${p.name}: no user called ${p.owner} yet, issues stay unassigned`);
+    return;
+  }
+  const open = await must('POST', '/rest/api/3/search/jql', {
+    jql: `project = ${p.key} AND assignee IS EMPTY`,
+    fields: ['summary'],
+    maxResults: 100,
+  });
+  let done = 0;
+  for (const issue of open.issues) {
+    const res = await call('PUT', `/rest/api/3/issue/${issue.key}/assignee`, { accountId: ownerId });
+    if (res.ok) done++;
+    else console.log(`! ${issue.key}: could not assign to ${p.owner} (${res.status} ${JSON.stringify(res.data).slice(0, 160)})`);
+  }
+  if (done) console.log(`→ ${p.name}: ${done} issues assigned to ${p.owner}`);
+}
+
 async function seedProject(p, me) {
   const existing = await call('GET', `/rest/api/3/project/${p.key}`);
   if (existing.ok) {
-    console.log(`= ${p.name}: project exists, skipped`);
+    console.log(`= ${p.name}: project exists`);
+    await assignOwner(p);
     return;
   }
   let created = null;
@@ -164,6 +210,7 @@ async function seedProject(p, me) {
     });
   }
   console.log(`+ ${p.name}: ${p.issues.length} issues`);
+  await assignOwner(p);
 }
 
 async function seedSpace(s) {
