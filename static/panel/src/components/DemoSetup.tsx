@@ -60,9 +60,9 @@ export function DemoSetup({ onBack }: Props) {
         to retire an API. Everything uses keys starting with EC, so nothing that exists is changed.
       </p>
 
-      {state === 'idle' && (
+      {(state === 'idle' || (state === 'done' && failed > 0)) && (
         <button className="primary-btn" onClick={run}>
-          Create demo company
+          {state === 'idle' ? 'Create demo company' : 'Try again'}
         </button>
       )}
 
@@ -88,7 +88,9 @@ export function DemoSetup({ onBack }: Props) {
           <p className="lede">
             {failed === 0
               ? 'Done. Search can take a minute or two to pick up new issues and pages.'
-              : `${failed} step${failed === 1 ? '' : 's'} could not be completed. The rest is ready.`}
+              : failed === steps.length
+                ? 'Nothing could be created. If Atlassian asked for access, wait a minute and try again.'
+                : `${failed} step${failed === 1 ? '' : 's'} could not be completed. The rest is ready.`}
           </p>
           {pageId && (
             <button className="primary-btn" onClick={() => openPage(pageId)}>
