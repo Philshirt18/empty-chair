@@ -36,6 +36,15 @@ All reads run as the current user, so Empty Chair only shows what that user can 
 2. Install into **both Confluence and Jira** on the same site. Jira Service Management is optional but recommended.
 3. Installing apps with Teamwork Graph scopes requires **organization admin** permissions on the site.
 
+### Fastest way: the demo company
+
+1. Open any Confluence page and click **Empty Chair** in the byline under the title.
+2. The panel says no affected work was found. Click **Try it with a demo company**, then **Create demo company**.
+3. It creates five Jira projects (keys starting with `EC`), two Confluence spaces, and the page *"RFC: Retire Payments API v1 on March 31"*. Nothing that already exists is changed. If a project name is taken, the demo one is called, for example, "Platform (demo)".
+4. Wait a minute or two for search indexing, then click **Open the demo decision** and click **Empty Chair** on that page.
+
+You see four teams as empty chairs and Platform (your own team, because its issues are assigned to you) at the table. The write scopes in the app are used only for this demo setup and for posting the invitation comment.
+
 ### Try it on your own content
 
 1. Make sure a few open Jira issues mention a system, product, or process by name, for example "Payments API v1".
@@ -46,7 +55,7 @@ All reads run as the current user, so Empty Chair only shows what that user can 
 
 Search indexing in Jira and Confluence can take a few minutes after you create issues or pages. If the panel says no affected work was found, wait and click **Check again**.
 
-### Demo data (optional)
+### Demo data with people (optional)
 
 `scripts/seed.mjs` creates the fictional company used in the demo video: projects Platform, Team Atlas, Customer Support, Finance Ops, and Security, the RFC page, and two Finance pages. It needs Node.js and an Atlassian API token in a local `.env` file:
 
