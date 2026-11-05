@@ -1,12 +1,14 @@
 import Resolver from '@forge/resolver';
 import { analyzePage, draftInvites, latestAnalysis, postInvites } from './analysis/engine';
 import { demoPlan, runDemoStep } from './demo/setup';
+import { ensureUserAccess } from './analysis/atlassian';
 import type { InviteDraft } from './types';
 
 const r = new Resolver();
 
 r.define('analyze', async ({ payload, context }) => {
   const pageId = context.extension.content.id as string;
+  await ensureUserAccess();
   return analyzePage(pageId, { force: Boolean(payload?.force), cloudId: context.cloudId });
 });
 
@@ -22,6 +24,7 @@ r.define('postInvites', async ({ payload, context }) => {
 r.define('demoPlan', async () => demoPlan());
 
 r.define('demoStep', async ({ payload, context }) => {
+  await ensureUserAccess();
   return runDemoStep(String(payload.id), context.accountId);
 });
 

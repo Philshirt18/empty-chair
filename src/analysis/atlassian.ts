@@ -18,7 +18,17 @@ export interface PageInfo {
   labels: string[];
 }
 
+/**
+ * Without a user grant, Confluence answers as an anonymous caller (403/404) instead of asking for consent.
+ * Jira throws the authentication error that makes Atlassian show "Allow access", so it is called first
+ * and its error is passed through untouched.
+ */
+export async function ensureUserAccess(): Promise<void> {
+  await api.asUser().requestJira(route`/rest/api/3/myself`);
+}
+
 export async function getPage(pageId: string): Promise<PageInfo> {
+  const first = await api.asUser().requestConfluence(route`/wiki/api/v2/pages/${pageId}?body-format=storage`);
   const page = await json<{
     id: string;
     title: string;
@@ -27,7 +37,7 @@ export async function getPage(pageId: string): Promise<PageInfo> {
     spaceId: string;
     version: { number: number };
     body: { storage: { value: string } };
-  }>(await api.asUser().requestConfluence(route`/wiki/api/v2/pages/${pageId}?body-format=storage`));
+  }>(first);
 
   const labels = await json<{ results: { name: string }[] }>(
     await api.asUser().requestConfluence(route`/wiki/api/v2/pages/${pageId}/labels`),

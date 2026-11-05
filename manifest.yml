@@ -104,7 +104,6 @@ permissions:
     - write:comment:confluence
     # Demo company setup only (src/demo/setup.ts)
     - write:jira-work
-    - manage:jira-project
     - write:page:confluence
     - write:space:confluence
     - storage:app
