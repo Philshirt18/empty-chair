@@ -285,7 +285,7 @@ Treat the decision as proposed, not final. Never invent deadlines, consequences,
 Team: ${seat.team}
 Contacts: ${seat.contacts.map((c) => c.name).join(', ') || 'none'}
 Their related work:
-${describeEvidence(seat)}`,
+${describeEvidence(seat, kind === 'nudge' ? 2 : 5)}`,
         300,
       );
       return { seatId: seat.id, team: seat.team, kind, recipients: seat.contacts, message: cleanInvite(message) };
@@ -316,9 +316,10 @@ export async function postInvites(pageId: string, drafts: InviteDraft[]): Promis
   return { posted: drafts.length };
 }
 
-function describeEvidence(seat: Seat): string {
+/** Evidence as prompt text. Fewer examples keep short messages from turning into lists. */
+function describeEvidence(seat: Seat, examples = 5): string {
   return seat.evidence
-    .map((e) => `- ${e.count} ${e.label}, for example: ${e.items.map((i) => i.title).join('; ')}`)
+    .map((e) => `- ${e.count} ${e.label}, for example: ${e.items.slice(0, examples).map((i) => i.title).join('; ')}`)
     .join('\n');
 }
 
