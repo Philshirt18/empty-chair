@@ -1,5 +1,6 @@
 import Resolver from '@forge/resolver';
 import { analyzePage, draftInvites, latestAnalysis, postInvites } from './analysis/engine';
+import { demoPlan, runDemoStep } from './demo/setup';
 import type { InviteDraft } from './types';
 
 const r = new Resolver();
@@ -15,6 +16,13 @@ r.define('draftInvites', async ({ payload, context }) => {
 
 r.define('postInvites', async ({ payload, context }) => {
   return postInvites(context.extension.content.id, payload.drafts as InviteDraft[]);
+});
+
+// Demo company for trying the app on an empty site. The panel runs one step per call.
+r.define('demoPlan', async () => demoPlan());
+
+r.define('demoStep', async ({ payload, context }) => {
+  return runDemoStep(String(payload.id), context.accountId);
 });
 
 export const resolver = r.getDefinitions();

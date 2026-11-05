@@ -28,6 +28,7 @@ export async function analyze(force = false): Promise<Analysis> {
   if (isLocal) {
     await wait(force ? 900 : 1400);
     if (mockMode === 'error') throw new Error('The analysis service did not respond.');
+    if (mockMode === 'empty') return { ...mockAnalysis, seats: [] };
     return mockMode === 'seated' ? mockAllSeated : mockAnalysis;
   }
   return invoke<Analysis>('analyze', { force });
@@ -39,6 +40,47 @@ export async function draftInvites(seatIds: string[]): Promise<InviteDraft[]> {
     return mockInvites(seatIds);
   }
   return invoke<InviteDraft[]>('draftInvites', { seatIds });
+}
+
+export interface DemoStep {
+  id: string;
+  label: string;
+}
+
+export interface DemoStepResult {
+  ok: boolean;
+  detail: string;
+  pageId?: string;
+}
+
+export async function demoPlan(): Promise<DemoStep[]> {
+  if (isLocal) {
+    return [
+      { id: 'project:ECPLAT', label: 'Platform: 4 issues' },
+      { id: 'project:ECATL', label: 'Team Atlas: 6 issues' },
+      { id: 'project:ECHELP', label: 'Customer Support: 5 requests' },
+      { id: 'project:ECFIN', label: 'Finance Ops: 2 issues' },
+      { id: 'project:ECSEC', label: 'Security: 2 issues' },
+      { id: 'space:ECFIN', label: 'Finance Ops: 2 pages' },
+      { id: 'space:ECENG', label: 'Engineering: 1 page' },
+    ];
+  }
+  return invoke<DemoStep[]>('demoPlan', {});
+}
+
+export async function demoStep(id: string): Promise<DemoStepResult> {
+  if (isLocal) {
+    await wait(600);
+    return { ok: true, detail: 'Created', pageId: id === 'space:ECENG' ? '98304' : undefined };
+  }
+  return invoke<DemoStepResult>('demoStep', { id });
+}
+
+/** Opens a Confluence page in the host product; the panel itself runs in a sandboxed iframe. */
+export async function openPage(pageId: string): Promise<void> {
+  if (isLocal) return;
+  const { router } = await bridge();
+  await router.navigate(`/wiki/spaces/ECENG/pages/${pageId}`);
 }
 
 export async function postInvites(drafts: InviteDraft[]): Promise<{ posted: number }> {

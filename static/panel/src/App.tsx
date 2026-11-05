@@ -4,9 +4,10 @@ import { analyze, draftInvites, postInvites } from './api';
 import { RoundTable } from './components/RoundTable';
 import { SeatRow } from './components/SeatRow';
 import { InviteSheet } from './components/InviteSheet';
+import { DemoSetup } from './components/DemoSetup';
 import { ChairMark, GraphMark, Refresh } from './components/Icons';
 
-type View = 'table' | 'invites';
+type View = 'table' | 'invites' | 'demo';
 
 const ORDER: Record<Seat['status'], number> = { missing: 0, silent: 1, present: 2 };
 const WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
@@ -95,6 +96,14 @@ export default function App() {
 
   if (!data) return <Loading />;
 
+  if (view === 'demo') {
+    return (
+      <main className="shell">
+        <DemoSetup onBack={() => setView('table')} />
+      </main>
+    );
+  }
+
   if (view === 'invites') {
     return (
       <main className="shell">
@@ -122,9 +131,14 @@ export default function App() {
               ? 'Empty Chair looks at proposals, RFCs, and decision records. Open one of those and check again.'
               : `Nothing in Jira or Confluence mentions ${data.subjects.join(', ') || 'what this page changes'}. Add specific system or process names to the page, then check again.`}
           </p>
-          <button className="primary-btn" onClick={() => load(true)}>
-            Check again
-          </button>
+          <div className="state__actions">
+            <button className="primary-btn" onClick={() => load(true)}>
+              Check again
+            </button>
+            <button className="ghost-btn" onClick={() => setView('demo')}>
+              Try it with a demo company
+            </button>
+          </div>
         </div>
       </main>
     );

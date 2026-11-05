@@ -999,3 +999,75 @@ textarea {
   background: var(--sunken);
   border: 1px solid var(--rule-2);
 }
+
+.state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.demo-steps {
+  margin: 4px 0 24px;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+
+.demo-step {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 4px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink-3);
+  transition: color 0.2s var(--ease);
+}
+
+.demo-step__mark {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid var(--rule-2);
+}
+
+.demo-step--running {
+  color: var(--ink);
+}
+
+.demo-step--running .demo-step__mark {
+  border-color: var(--empty);
+  animation: breathe-dot 1.2s ease-in-out infinite;
+}
+
+.demo-step--ok {
+  color: var(--ink-2);
+}
+
+.demo-step--ok .demo-step__mark {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.demo-step--failed {
+  color: var(--empty-ink);
+}
+
+.demo-step--failed .demo-step__mark {
+  border-color: var(--empty);
+  background: var(--empty-wash);
+}
+
+.demo-step__detail {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.demo-step--failed .demo-step__detail {
+  color: var(--empty-ink);
+}
+
+.demo-done .lede {
+  margin-bottom: 16px;
+}
