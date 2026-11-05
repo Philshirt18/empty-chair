@@ -107,8 +107,6 @@ permissions:
     - manage:jira-project
     - write:page:confluence
     - write:space:confluence
-    - write:confluence-space
-    - write:confluence-content
     - storage:app
     - read:graph:user:atlassian
     - read:graph:team:atlassian
