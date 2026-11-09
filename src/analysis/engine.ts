@@ -61,7 +61,9 @@ export async function analyzePage(
   ]);
   if (!viewers.ok) console.log(`[graph] page viewers unavailable: ${viewers.reason}`);
 
-  const groups = await nameByAtlassianTeams(groupByTeam(issues, pages), page.authorId);
+  // Pages in the decision's own space (or a space of the same name) belong to the deciding team, not another one.
+  const otherPages = page.spaceName ? pages.filter((p) => p.spaceName !== page.spaceName) : pages;
+  const groups = await nameByAtlassianTeams(groupByTeam(issues, otherPages), page.authorId);
   const seats = await Promise.all(
     [...groups.values()].map((g) => toSeat(g, pageId, page.authorId, participants, viewers)),
   );

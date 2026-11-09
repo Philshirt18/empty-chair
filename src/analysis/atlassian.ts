@@ -14,6 +14,8 @@ export interface PageInfo {
   authorId: string;
   version: number;
   spaceId: string;
+  /** Name of the page's own space. Pages there are the deciding team's context, not another team's work. */
+  spaceName: string;
   text: string;
   labels: string[];
 }
@@ -39,9 +41,14 @@ export async function getPage(pageId: string): Promise<PageInfo> {
     body: { storage: { value: string } };
   }>(first);
 
-  const labels = await json<{ results: { name: string }[] }>(
-    await api.asUser().requestConfluence(route`/wiki/api/v2/pages/${pageId}/labels`),
-  ).catch(() => ({ results: [] }));
+  const [labels, space] = await Promise.all([
+    json<{ results: { name: string }[] }>(
+      await api.asUser().requestConfluence(route`/wiki/api/v2/pages/${pageId}/labels`),
+    ).catch(() => ({ results: [] })),
+    json<{ name: string }>(await api.asUser().requestConfluence(route`/wiki/api/v2/spaces/${page.spaceId}`)).catch(
+      () => ({ name: '' }),
+    ),
+  ]);
 
   return {
     id: page.id,
@@ -50,6 +57,7 @@ export async function getPage(pageId: string): Promise<PageInfo> {
     authorId: page.authorId,
     version: page.version.number,
     spaceId: page.spaceId,
+    spaceName: space.name,
     text: stripHtml(page.body.storage.value),
     labels: labels.results.map((l) => l.name),
   };
