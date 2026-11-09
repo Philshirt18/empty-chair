@@ -35,6 +35,7 @@ All reads run as the current user, so Empty Chair only shows what that user can 
 1. Open the installation link from the submission.
 2. Install into **both Confluence and Jira** on the same site. Jira Service Management is optional but recommended.
 3. Installing apps with Teamwork Graph scopes requires **organization admin** permissions on the site.
+4. The first time you open the panel, Atlassian asks you to **Allow access** once, because Empty Chair reads as you. If you are signed in to several Atlassian accounts in the same browser, check that the consent page shows the account you use on the site; otherwise the request keeps coming back.
 
 ### Fastest way: the demo company
 
