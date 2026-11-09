@@ -41,10 +41,10 @@ All reads run as the current user, so Empty Chair only shows what that user can 
 
 1. Open any Confluence page and click **Empty Chair** in the byline under the title.
 2. The panel says no affected work was found. Click **Try it with a demo company**, then **Create demo company**.
-3. It creates five Jira projects (keys starting with `EC`), two Confluence spaces, and the page *"RFC: Retire Payments API v1 on March 31"*. Nothing that already exists is changed. If a project name is taken, the demo one is called, for example, "Platform (demo)".
+3. It creates a Confluence space for each of four teams (Team Atlas, Customer Support, Finance Ops, Security; keys starting with `EC`) with pages that depend on Payments API v1, and the page *"RFC: Retire Payments API v1 on March 31"* in an Engineering space. Nothing that already exists is changed.
 4. Wait a minute or two for search indexing, then click **Open the demo decision** and click **Empty Chair** on that page.
 
-You see four teams as empty chairs and Platform (your own team, because its issues are assigned to you) at the table. The write scopes in the app are used only for this demo setup and for posting the invitation comment.
+You see four teams as empty chairs. The demo uses Confluence only, because creating Jira projects needs a scope that users cannot grant to an app; with your own Jira issues (next section), Jira projects and Atlassian teams appear at the table as well. The write scopes in the app are used only for this demo setup and for posting the invitation comment.
 
 ### Try it on your own content
 

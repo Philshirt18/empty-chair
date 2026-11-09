@@ -56,12 +56,10 @@ export interface DemoStepResult {
 export async function demoPlan(): Promise<DemoStep[]> {
   if (isLocal) {
     return [
-      { id: 'project:ECPLAT', label: 'Platform: 4 issues' },
-      { id: 'project:ECATL', label: 'Team Atlas: 6 issues' },
-      { id: 'project:ECHELP', label: 'Customer Support: 5 requests' },
-      { id: 'project:ECFIN', label: 'Finance Ops: 2 issues' },
-      { id: 'project:ECSEC', label: 'Security: 2 issues' },
+      { id: 'space:ECATL', label: 'Team Atlas: 3 pages' },
+      { id: 'space:ECHELP', label: 'Customer Support: 2 pages' },
       { id: 'space:ECFIN', label: 'Finance Ops: 2 pages' },
+      { id: 'space:ECSEC', label: 'Security: 2 pages' },
       { id: 'space:ECENG', label: 'Engineering: 1 page' },
     ];
   }

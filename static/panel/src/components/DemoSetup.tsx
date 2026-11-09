@@ -56,8 +56,9 @@ export function DemoSetup({ onBack }: Props) {
 
       <h2 className="display display--sm">Set the table for a demo.</h2>
       <p className="lede">
-        Creates a small fictional company in this site: five Jira projects, two Confluence spaces, and a decision page
-        to retire an API. Everything uses keys starting with EC, so nothing that exists is changed.
+        Creates a small fictional company in this site: a Confluence space for each of four teams, with pages that
+        depend on a payments API, and a decision page to retire it. Every space key starts with EC, so nothing that
+        exists is changed.
       </p>
 
       {(state === 'idle' || (state === 'done' && failed > 0)) && (
@@ -87,7 +88,7 @@ export function DemoSetup({ onBack }: Props) {
         <div className="demo-done">
           <p className="lede">
             {failed === 0
-              ? 'Done. Search can take a minute or two to pick up new issues and pages.'
+              ? 'Done. Search can take a minute or two to pick up the new pages.'
               : failed === steps.length
                 ? 'Nothing could be created. If Atlassian asked for access, wait a minute and try again.'
                 : `${failed} step${failed === 1 ? '' : 's'} could not be completed. The rest is ready.`}

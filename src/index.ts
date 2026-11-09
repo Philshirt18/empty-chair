@@ -25,7 +25,7 @@ r.define('demoPlan', async () => demoPlan());
 
 r.define('demoStep', async ({ payload, context }) => {
   await ensureUserAccess();
-  return runDemoStep(String(payload.id), context.accountId);
+  return runDemoStep(String(payload.id));
 });
 
 export const resolver = r.getDefinitions();
