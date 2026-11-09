@@ -138,31 +138,38 @@ async function confluence(method: string, path: ReturnType<typeof route>, body?:
 }
 
 function errorText(data: any): string {
-  const messages = [...(data?.errorMessages ?? []), ...Object.values(data?.errors ?? {})];
+  const errors = Array.isArray(data?.errors)
+    ? data.errors.map((e: any) => e?.detail || e?.title).filter(Boolean)
+    : Object.values(data?.errors ?? {});
+  const messages = [...(data?.errorMessages ?? []), ...errors];
   return (messages.join(' ') || data?.message || 'unknown error').slice(0, 200);
 }
 
+// v2 endpoints only: the v1 space and content endpoints need classic scopes this app does not request,
+// and Forge reports a missing scope on them as "consent required", which loops forever.
 async function seedSpace(spec: SpaceSpec): Promise<DemoStepResult> {
-  let space = await confluence('GET', route`/wiki/rest/api/space/${spec.key}`);
-  if (!space.ok) {
-    space = await confluence('POST', route`/wiki/rest/api/space`, { key: spec.key, name: spec.name });
-    if (!space.ok) return { ok: false, detail: `Space not created: ${errorText(space.data)}` };
+  const found = await confluence('GET', route`/wiki/api/v2/spaces?keys=${spec.key}`);
+  let spaceId: string | undefined = found.data?.results?.[0]?.id;
+  if (!spaceId) {
+    const created = await confluence('POST', route`/wiki/api/v2/spaces`, { key: spec.key, name: spec.name });
+    if (!created.ok) return { ok: false, detail: `Space not created: ${errorText(created.data)}` };
+    spaceId = String(created.data.id);
   }
 
   let decisionPageId: string | undefined;
   let made = 0;
   for (const page of spec.pages) {
-    const found = await confluence('GET', route`/wiki/rest/api/content?spaceKey=${spec.key}&title=${page.title}`);
-    let id: string | undefined = found.data?.results?.[0]?.id;
+    const existing = await confluence('GET', route`/wiki/api/v2/spaces/${spaceId}/pages?title=${page.title}`);
+    let id: string | undefined = existing.data?.results?.[0]?.id;
     if (!id) {
       const created = await confluence('POST', route`/wiki/api/v2/pages`, {
-        spaceId: String(space.data.id),
+        spaceId,
         status: 'current',
         title: page.title,
         body: { representation: 'storage', value: page.body },
       });
       if (!created.ok) return { ok: false, detail: `Page not created: ${errorText(created.data)}` };
-      id = created.data.id;
+      id = String(created.data.id);
       made++;
     }
     if (page.isDecision) decisionPageId = id;
