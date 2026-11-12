@@ -74,7 +74,7 @@ First release: decision check panel, Rovo agent, and MCP tools.
 
 ## Screenshots to take (1840x900)
 
-Take them on philippschaefer.atlassian.net, with the browser window at about 1840 px wide and zoomed so the panel fills the frame:
+Take them on your test site, with the browser window at about 1840 px wide and zoomed so the panel fills the frame:
 
 1. the round table on the RFC page (also the Devpost hero image);
 2. Team Atlas expanded;

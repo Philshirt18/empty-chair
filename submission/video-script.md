@@ -1,6 +1,6 @@
 # Empty Chair: demo video script (target 4:30, hard limit 5:00)
 
-Record on philippschaefer.atlassian.net with the seeded company (Platform, Team Atlas, Customer Support, Finance Ops, Security) and the page "RFC: Retire Payments API v1 on March 31" (page id 983041). Use only numbers the app shows on screen. No invented statistics.
+Record on your test site with the seeded company (Platform, Team Atlas, Customer Support, Finance Ops, Security) and the page "RFC: Retire Payments API v1 on March 31". Use only numbers the app shows on screen. No invented statistics.
 
 Before recording:
 - Mira has opened the RFC page in the last days without commenting, so Team Atlas shows as "Read it, not speaking".
