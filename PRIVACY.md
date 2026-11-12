@@ -47,4 +47,4 @@ You can revoke the app's access to your account at any time under your Atlassian
 
 ## Contact
 
-Questions about this policy: Philipp Schaefer, SUPPORT_EMAIL.
+Questions about this policy: Philipp Schaefer, philipp.schaefer.dev@gmail.com.
