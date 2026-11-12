@@ -15,6 +15,8 @@ import { pageViewers, userTeams, type GraphResult } from './graph';
 import { ask, askJson } from './llm';
 
 const CACHE_TTL_SECONDS = 60 * 60 * 6;
+/** The last result per page (used by the byline title and list-open-decisions) is kept for 30 days, then deleted. */
+const LATEST_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 interface Extraction {
   isDecision: boolean;
@@ -84,7 +86,7 @@ export async function analyzePage(
   };
 
   await kvs.set(cacheKey, analysis, { ttl: { value: CACHE_TTL_SECONDS, unit: 'SECONDS' } });
-  await kvs.set(`latest:${pageId}`, analysis);
+  await kvs.set(`latest:${pageId}`, analysis, { ttl: { value: LATEST_TTL_SECONDS, unit: 'SECONDS' } });
   return analysis;
 }
 
