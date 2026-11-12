@@ -214,5 +214,11 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-const escapeJql = (s: string) => s.replace(/["\\]/g, '');
-const escapeCql = (s: string) => s.replace(/["\\]/g, '');
+// Multi-word terms are searched as exact phrases. Without the inner quotes, "Payments API v1" also matches any
+// page that mentions "payment" somewhere, which pulls in unrelated teams.
+const phrase = (s: string) => {
+  const clean = s.replace(/["\\]/g, '').trim();
+  return /\s/.test(clean) ? `\\"${clean}\\"` : clean;
+};
+const escapeJql = phrase;
+const escapeCql = phrase;

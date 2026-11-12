@@ -64,10 +64,10 @@ export async function analyzePage(
   // Pages in the decision's own space (or a space of the same name) belong to the deciding team, not another one.
   const otherPages = page.spaceName ? pages.filter((p) => p.spaceName !== page.spaceName) : pages;
   const groups = await nameByAtlassianTeams(groupByTeam(issues, otherPages), page.authorId);
-  const seats = await Promise.all(
+  const allSeats = await Promise.all(
     [...groups.values()].map((g) => toSeat(g, pageId, page.authorId, participants, viewers)),
   );
-  await writeReasons(page.title, seats);
+  const seats = await writeReasons(page.title, extraction.subjects.map((s) => s.label), allSeats);
 
   const analysis: Analysis = {
     pageId,
@@ -261,20 +261,31 @@ async function toSeat(
 }
 
 /** One factual sentence per seat. Falls back to a plain summary if the model is unavailable. */
-async function writeReasons(pageTitle: string, seats: Seat[]) {
+/**
+ * Writes one reason per seat and drops seats whose work clearly has nothing to do with what the decision changes.
+ * Text search can match a stray word, so this is the second filter. Teams that are already taking part stay.
+ */
+async function writeReasons(pageTitle: string, subjects: string[], seats: Seat[]): Promise<Seat[]> {
   const fallback = (s: Seat) =>
     s.evidence.map((e) => `${e.count} ${e.label}`).join(', ') + ' relate to this decision.';
   try {
-    const result = await askJson<{ reasons: Record<string, string> }>(
+    const result = await askJson<{ reasons: Record<string, string>; unrelated?: string[] }>(
       `You explain in one short sentence (max 22 words) how a team's existing work connects to a decision.
 Say what the work is about, using the titles given. Use the exact total count. The titles are examples, not the full list.
 Do not list issue keys or key ranges. Do not start with the team name. Do not claim consequences that the titles do not state. No names of individuals.
-Return {"reasons": {"<seat id>": "<sentence>"}}.`,
-      `Decision: ${pageTitle}\n\n` + seats.map((s) => `Seat ${s.id} (${s.team}):\n${describeEvidence(s)}`).join('\n\n'),
+If none of a team's titles is about anything the decision changes (they only share a common word), put its seat id in "unrelated" instead of writing a reason. When in doubt, keep the team.
+Return {"reasons": {"<seat id>": "<sentence>"}, "unrelated": ["<seat id>"]}.`,
+      `Decision: ${pageTitle}\nWhat it changes: ${subjects.join(', ')}\n\n` +
+        seats.map((s) => `Seat ${s.id} (${s.team}):\n${describeEvidence(s)}`).join('\n\n'),
     );
-    seats.forEach((s) => (s.reason = result.reasons[s.id] ?? fallback(s)));
+    const unrelated = new Set(result.unrelated ?? []);
+    const kept = seats.filter((s) => !unrelated.has(s.id) || s.status === 'present');
+    if (unrelated.size) console.log(`[reasons] left out as unrelated: ${seats.filter((s) => !kept.includes(s)).map((s) => s.team)}`);
+    kept.forEach((s) => (s.reason = result.reasons[s.id] ?? fallback(s)));
+    return kept;
   } catch {
     seats.forEach((s) => (s.reason = fallback(s)));
+    return seats;
   }
 }
 
