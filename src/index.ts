@@ -1,7 +1,7 @@
 import Resolver from '@forge/resolver';
-import { analyzePage, draftInvites, latestAnalysis, postInvites } from './analysis/engine';
+import { analyzePage, draftInvites, latestAnalysis, postInvites, recentAnalyses } from './analysis/engine';
 import { demoPlan, runDemoStep } from './demo/setup';
-import { ensureUserAccess } from './analysis/atlassian';
+import { canSeePage, ensureUserAccess } from './analysis/atlassian';
 import type { InviteDraft } from './types';
 
 const r = new Resolver();
@@ -98,4 +98,30 @@ export async function draftInviteAction(
   if (!seat) return { error: `No affected team called "${payload.team}" was found for this page.` };
   const [draft] = await draftInvites(pageId, [seat.id]);
   return { team: draft.team, to: draft.recipients.map((r) => r.name), message: draft.message };
+}
+
+/**
+ * Rovo action and MCP tool: list-open-decisions.
+ * Lists decision pages Empty Chair has checked, with how many affected teams are not at the table.
+ * Results are stored per page, so each page is re-checked against the current user's access first.
+ */
+export async function listDecisionsAction() {
+  const recent = await recentAnalyses(20);
+  const visible = (await Promise.all(recent.map(async (a) => ((await canSeePage(a.pageId)) ? a : null)))).filter(
+    (a): a is NonNullable<typeof a> => a !== null,
+  );
+  if (visible.length === 0) {
+    return { decisions: [], note: 'No decision pages have been checked yet. Open a decision page and run Empty Chair once.' };
+  }
+  return {
+    decisions: visible.map((a) => ({
+      pageId: a.pageId,
+      page: a.pageTitle,
+      checked: a.analyzedAt,
+      notAtTheTable: a.seats.filter((s) => s.status === 'missing').map((s) => s.team),
+      readButQuiet: a.seats.filter((s) => s.status === 'silent').map((s) => s.team),
+      atTheTable: a.seats.filter((s) => s.status === 'present').map((s) => s.team),
+    })),
+    note: 'Results are from the last time each page was checked. Call find-missing-stakeholders with a pageId for a fresh check.',
+  };
 }

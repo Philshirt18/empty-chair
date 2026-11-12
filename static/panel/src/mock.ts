@@ -110,7 +110,7 @@ export const mockAnalysis: Analysis = {
       team: 'Security',
       monogram: 'SE',
       status: 'silent',
-      reason: 'Reviews every API change. Aisha read this page last week but has not commented.',
+      reason: 'Reviews every API change. Security has read this page but has not commented yet.',
       engagement: { viewed: true, commented: false, read: true },
       contacts: [{ name: 'Aisha Khan', role: 'AppSec' }],
       evidence: [
@@ -154,7 +154,7 @@ export const mockAllSeated: Analysis = {
 export function mockInvites(seatIds: string[]): InviteDraft[] {
   const texts: Record<string, string> = {
     atlas:
-      'Hi Jonas and Mira, Platform plans to retire Payments API v1 on March 31. Checkout still uses v1 in 14 open issues, including the one-click checkout epic (ATL-117). Could one of you review the RFC this week and add what you need for the migration?',
+      'Hi Jonas and Mira, Platform plans to retire Payments API v1 on March 31. Checkout still uses v1 in 14 open issues, including the one-click checkout epic (ATL-117). Could one of you review the RFC before it is decided and add what you need for the migration?',
     support:
       'Hi Priya, we plan to switch off Payments API v1 on March 31. 37 open customer requests mention v1, so customers will need a heads-up. Could you look at the RFC and tell us what support needs: timeline, wording, or a migration guide?',
     finance:

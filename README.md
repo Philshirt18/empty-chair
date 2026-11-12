@@ -22,9 +22,9 @@ The decision's own author filing tickets for other teams does not seat those tea
 | Teamwork Graph API (persisted Cypher queries) | Who viewed the page; which Atlassian teams people belong to |
 | Jira and Jira Service Management REST APIs | Open issues and customer requests that depend on the decision |
 | Confluence REST APIs | Page content, comments, versions, watchers, related pages, posting the comment |
-| `rovo:agent` and `action` modules | "Who is missing from this decision?" and "Draft an invite for this team" |
-| `rovo:mcp` module | The same two tools for external MCP clients |
-| Forge KVS | Caching analyses per page version |
+| `rovo:agent` and `action` modules | "Who is missing from this decision?", "Draft an invite for this team", and "Which open decisions have empty chairs?" |
+| `rovo:mcp` module | The same three tools for external MCP clients such as Claude |
+| Forge KVS | Caching analyses per page version, and the list of checked decisions |
 
 All reads run as the current user, so Empty Chair only shows what that user can already see. The app runs entirely on Atlassian: no external services.
 
@@ -44,7 +44,16 @@ All reads run as the current user, so Empty Chair only shows what that user can 
 3. It creates a Confluence space for each of four teams (Team Atlas, Customer Support, Finance Ops, Security; keys starting with `EC`) with pages that depend on Payments API v1, and the page *"RFC: Retire Payments API v1 on March 31"* in an Engineering space. Nothing that already exists is changed.
 4. Wait a minute or two for search indexing, then click **Open the demo decision** and click **Empty Chair** on that page.
 
-You see four teams as empty chairs. The demo uses Confluence only, because creating Jira projects needs a scope that users cannot grant to an app; with your own Jira issues (next section), Jira projects and Atlassian teams appear at the table as well. The write scopes in the app are used only for this demo setup and for posting the invitation comment.
+You see four teams as empty chairs. The demo uses Confluence only, because creating Jira projects needs a scope that users cannot grant to an app. **The full version does more than the demo can show on a fresh site:** teams come from Jira projects, Jira Service Management queues, and Atlassian teams in the Teamwork Graph; a team is **seated** when one of its people comments on the page, and **listening** when the Teamwork Graph shows that one of them read it without commenting. Both need other people on the site, so a one-person demo cannot produce them.
+
+To see all three states at once, click **See a sample analysis** on any page where Empty Chair found nothing. It is labelled as a sample, uses fictional data, and posts nothing. The demo video shows the same states on real data.
+
+The write scopes in the app are used only for this demo setup and for posting the invitation comment.
+
+### Rovo agent and MCP
+
+- In Rovo Chat, pick the **Empty Chair** agent (or @mention it) and ask *"Who is missing from this decision?"* with a page link, or *"Which open decisions have empty chairs?"*.
+- For MCP clients, an org admin turns on **Expose tools to MCP-compatible apps** under admin.atlassian.com → Apps → Sites → your site → Connected apps → Empty Chair → App details. The tools are `find-missing-stakeholders`, `draft-stakeholder-invite`, and `list-open-decisions`.
 
 ### Try it on your own content
 

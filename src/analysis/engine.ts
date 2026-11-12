@@ -1,4 +1,4 @@
-import { kvs } from '@forge/kvs';
+import { kvs, WhereConditions } from '@forge/kvs';
 import type { Analysis, Contact, EvidenceGroup, InviteDraft, Seat } from '../types';
 import {
   getPage,
@@ -86,6 +86,16 @@ export async function analyzePage(
   await kvs.set(cacheKey, analysis, { ttl: { value: CACHE_TTL_SECONDS, unit: 'SECONDS' } });
   await kvs.set(`latest:${pageId}`, analysis);
   return analysis;
+}
+
+/** The most recently analysed pages, newest first. Callers must check that the user can see each page. */
+export async function recentAnalyses(limit = 20): Promise<Analysis[]> {
+  const res = await kvs.query().where('key', WhereConditions.beginsWith('latest:')).limit(100).getMany<Analysis>();
+  return res.results
+    .map((r) => r.value)
+    .filter((a) => a && a.isDecision)
+    .sort((x, y) => y.analyzedAt.localeCompare(x.analyzedAt))
+    .slice(0, limit);
 }
 
 export async function latestAnalysis(pageId: string): Promise<Analysis | undefined> {

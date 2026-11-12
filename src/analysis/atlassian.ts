@@ -29,6 +29,12 @@ export async function ensureUserAccess(): Promise<void> {
   await api.asUser().requestJira(route`/rest/api/3/myself`);
 }
 
+/** True when the current user can open the page. Used before showing stored results for it. */
+export async function canSeePage(pageId: string): Promise<boolean> {
+  const res = await api.asUser().requestConfluence(route`/wiki/api/v2/pages/${pageId}`);
+  return res.ok;
+}
+
 export async function getPage(pageId: string): Promise<PageInfo> {
   const first = await api.asUser().requestConfluence(route`/wiki/api/v2/pages/${pageId}?body-format=storage`);
   const page = await json<{

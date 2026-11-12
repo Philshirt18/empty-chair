@@ -25,8 +25,16 @@ modules:
       actions:
         - find-missing-stakeholders
         - draft-stakeholder-invite
+        - list-open-decisions
 
   action:
+    - key: list-open-decisions
+      name: List open decisions
+      function: action-list-decisions
+      actionVerb: GET
+      description: |
+        List the decision pages Empty Chair has checked, newest first, with the affected teams not at the
+        table and the teams that read but stayed quiet. Results are from each page's last check. No input.
     - key: find-missing-stakeholders
       name: Find missing stakeholders
       function: action-find-missing
@@ -65,6 +73,7 @@ modules:
       tools:
         - find-missing-stakeholders
         - draft-stakeholder-invite
+        - list-open-decisions
 
   llm:
     - key: empty-chair-llm
@@ -80,6 +89,8 @@ modules:
       handler: index.findMissingAction
     - key: action-draft-invite
       handler: index.draftInviteAction
+    - key: action-list-decisions
+      handler: index.listDecisionsAction
 
 resources:
   - key: panel

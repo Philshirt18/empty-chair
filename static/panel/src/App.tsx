@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Analysis, InviteDraft, Seat } from './types';
 import { analyze, draftInvites, postInvites } from './api';
+import { mockAnalysis, mockInvites } from './mock';
 import { RoundTable } from './components/RoundTable';
 import { SeatRow } from './components/SeatRow';
 import { InviteSheet } from './components/InviteSheet';
@@ -22,6 +23,8 @@ export default function App() {
   const [view, setView] = useState<View>('table');
   const [drafts, setDrafts] = useState<InviteDraft[] | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  /** A fictional analysis that shows every state, for sites without enough real activity. Nothing is posted. */
+  const [sample, setSample] = useState(false);
 
   async function load(force = false) {
     setError(null);
@@ -41,10 +44,24 @@ export default function App() {
     load();
   }, []);
 
+  const shown = sample ? mockAnalysis : data;
   const seats = useMemo(
-    () => (data ? [...data.seats].sort((a, b) => ORDER[a.status] - ORDER[b.status]) : []),
-    [data],
+    () => (shown ? [...shown.seats].sort((a, b) => ORDER[a.status] - ORDER[b.status]) : []),
+    [shown],
   );
+
+  function openSample() {
+    setSample(true);
+    setView('table');
+    setExpanded(null);
+    setSelected(new Set(mockAnalysis.seats.filter((s) => s.status !== 'present').map((s) => s.id)));
+  }
+
+  function closeSample() {
+    setSample(false);
+    setExpanded(null);
+    if (data) setSelected(new Set(data.seats.filter((s) => s.status !== 'present').map((s) => s.id)));
+  }
   const counts = useMemo(() => {
     const c = { present: 0, silent: 0, missing: 0 };
     seats.forEach((s) => c[s.status]++);
@@ -60,7 +77,7 @@ export default function App() {
     setDrafts(null);
     setView('invites');
     try {
-      setDrafts(await draftInvites([...selected]));
+      setDrafts(sample ? mockInvites([...selected]) : await draftInvites([...selected]));
     } catch {
       setView('table');
       setToast('Invitations could not be drafted. Try again in a moment.');
@@ -68,6 +85,11 @@ export default function App() {
   }
 
   async function post(final: InviteDraft[]) {
+    if (sample) {
+      setView('table');
+      setToast('This is the sample. Nothing was posted.');
+      return;
+    }
     const { posted } = await postInvites(final);
     setView('table');
     setToast(`${posted} invitation${posted === 1 ? '' : 's'} posted to the page`);
@@ -94,7 +116,7 @@ export default function App() {
     );
   }
 
-  if (!data) return <Loading />;
+  if (!data || !shown) return <Loading />;
 
   if (view === 'demo') {
     return (
@@ -109,7 +131,7 @@ export default function App() {
       <main className="shell">
         <InviteSheet
           drafts={drafts}
-          pageTitle={data.pageTitle}
+          pageTitle={shown.pageTitle}
           onBack={() => setView('table')}
           onPost={post}
         />
@@ -117,7 +139,7 @@ export default function App() {
     );
   }
 
-  if (data.isDecision === false || seats.length === 0) {
+  if (!sample && (data.isDecision === false || seats.length === 0)) {
     return (
       <main className="shell">
         <Masthead />
@@ -138,6 +160,9 @@ export default function App() {
             <button className="ghost-btn" onClick={() => setView('demo')}>
               Try it with a demo company
             </button>
+            <button className="ghost-btn" onClick={openSample}>
+              See a sample analysis
+            </button>
           </div>
         </div>
       </main>
@@ -150,20 +175,34 @@ export default function App() {
     <main className="shell">
       <Masthead
         right={
-          <button className="ghost-btn" onClick={() => load(true)} disabled={refreshing}>
-            <Refresh /> {refreshing ? 'Checking…' : `Checked ${timeAgo(data.analyzedAt)}`}
-          </button>
+          sample ? (
+            <button className="ghost-btn" onClick={closeSample}>
+              Back to this page
+            </button>
+          ) : (
+            <button className="ghost-btn" onClick={() => load(true)} disabled={refreshing}>
+              <Refresh /> {refreshing ? 'Checking…' : `Checked ${timeAgo(data.analyzedAt)}`}
+            </button>
+          )
         }
       />
 
+      {sample && (
+        <p className="sample-note" role="note">
+          <strong>Sample analysis.</strong> Fictional teams and issues, so you can see all three states: a team at the
+          table, one that read the page in the Teamwork Graph but stayed quiet, and teams that have not joined. Drafting
+          works; nothing is posted.
+        </p>
+      )}
+
       <section className="hero">
         <div className="hero__table">
-          <RoundTable seats={data.seats} activeId={hovered} onHover={setHovered} onSelect={focusSeat} />
+          <RoundTable seats={shown.seats} activeId={hovered} onHover={setHovered} onSelect={focusSeat} />
           <Legend />
         </div>
 
         <div className="hero__copy">
-          <p className="eyebrow">{data.pageTitle}</p>
+          <p className="eyebrow">{shown.pageTitle}</p>
           {allSeated ? (
             <h1 className="display">Everyone affected is at the table.</h1>
           ) : (
@@ -194,7 +233,7 @@ export default function App() {
             </div>
           </dl>
 
-          {data.signals?.reading === 'graph' && (
+          {shown.signals?.reading === 'graph' && (
             <p className="source">
               <GraphMark /> Who read the page comes from the Teamwork Graph, last 30 days.
             </p>
@@ -203,7 +242,7 @@ export default function App() {
           <div className="subjects">
             <span className="subjects__label">What this decision touches</span>
             <div>
-              {data.subjects.map((s) => (
+              {shown.subjects.map((s) => (
                 <span key={s} className="subject">
                   {s}
                 </span>
