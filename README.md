@@ -26,7 +26,7 @@ The decision's own author filing tickets for other teams does not seat those tea
 | `rovo:mcp` module | The same three tools for external MCP clients such as Claude |
 | Forge KVS | Caching analyses per page version, and the list of checked decisions |
 
-All reads run as the current user, so Empty Chair only shows what that user can already see. The app runs entirely on Atlassian: no external services.
+All reads run as the current user, so Empty Chair only shows what that user can already see. The app runs entirely on Atlassian: no external services. See the [privacy policy](PRIVACY.md) for what is stored and for how long.
 
 ## Testing instructions for judges
 

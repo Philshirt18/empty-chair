@@ -9,7 +9,7 @@ Once the app is listed, it can no longer be shared through the developer console
 | What | Status |
 |---|---|
 | Sharing on in the developer console (Distribution) | do this first |
-| Privacy policy at a public URL | text in `PRIVACY.md`; replace SUPPORT_EMAIL, then publish it |
+| Privacy policy at a public URL | https://github.com/Philshirt18/empty-chair/blob/main/PRIVACY.md |
 | Logo 144x144 | `submission/assets/logo-144.png` |
 | Banner 1120x548 | `submission/assets/banner-1120x548.png` |
 | 3 highlight screenshots, 1840x900 | take them (see below) |
@@ -64,7 +64,7 @@ First release: decision check panel, Rovo agent, and MCP tools.
 
 ## Privacy and Security answers
 
-- Privacy policy URL: the published `PRIVACY.md`
+- Privacy policy URL: https://github.com/Philshirt18/empty-chair/blob/main/PRIVACY.md
 - Does the app store data outside Atlassian? No (Runs on Atlassian, no egress).
 - Does the app process personal data? Yes: names and account IDs of suggested contacts, stored in Forge storage within the customer's site.
 - Retention: cached results are deleted after 6 hours, the latest result per page after 30 days, everything on uninstall.
